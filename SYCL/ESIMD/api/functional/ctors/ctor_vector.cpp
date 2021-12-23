@@ -20,8 +20,11 @@
 // and the test must be enabled when it is resolved.
 //
 // Test for esimd constructor from vector.
-// The tests calls simd constructor in different contexts and with signed
-// unsigned and floating point types.
+// This test use different data types and simd constructor invocation contexts.
+// The test do the following actions:
+//  - call init_simd.data() to retreive vector_type and then provide it to the
+//    simd constructor
+//  - bitwise comparing expected and retrieved values
 
 #include "common.hpp"
 
@@ -33,9 +36,9 @@ struct initializer {
   static std::string get_description() { return "initializer"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(const DataT *const input_vector_data,
-                             DataT *const out) {
-    const auto simd_by_init = simd<DataT, NumElems>(input_vector_data);
+  static void call_simd_ctor(const DataT *const input_data, DataT *const out) {
+    simd<DataT, NumElems> init_simd(input_data);
+    const auto simd_by_init = simd<DataT, NumElems>(init_simd.data());
     simd_by_init.copy_to(out);
   }
 };
@@ -46,9 +49,9 @@ struct var_decl {
   static std::string get_description() { return "variable declaration"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(const DataT *const input_vector_data,
-                             DataT *const out) {
-    simd<DataT, NumElems> simd_by_var_decl(input_vector_data);
+  static void call_simd_ctor(const DataT *const input_data, DataT *const out) {
+    simd<DataT, NumElems> init_simd(input_data);
+    simd<DataT, NumElems> simd_by_var_decl(init_simd.data());
     simd_by_var_decl.copy_to(out);
   }
 };
@@ -59,10 +62,10 @@ struct rval_in_expr {
   static std::string get_description() { return "rvalue in an expression"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(const DataT *const input_vector_data,
-                             DataT *const out) {
+  static void call_simd_ctor(const DataT *const input_data, DataT *const out) {
+    simd<DataT, NumElems> init_simd(input_data);
     simd<DataT, NumElems> simd_by_rval;
-    simd_by_rval = simd<DataT, NumElems>(input_vector_data);
+    simd_by_rval = simd<DataT, NumElems>(init_simd.data());
     simd_by_rval.copy_to(out);
   }
 };
@@ -74,10 +77,10 @@ public:
   static std::string get_description() { return "const reference"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(const DataT *const input_vector_data,
-                             DataT *const out) {
+  static void call_simd_ctor(const DataT *const input_data, DataT *const out) {
+    simd<DataT, NumElems> init_simd(input_data);
     call_simd_by_const_ref<DataT, NumElems>(
-        simd<DataT, NumElems>(input_vector_data), out);
+        simd<DataT, NumElems>(init_simd.data()), out);
   }
 
 private:
@@ -103,10 +106,10 @@ public:
     // whole reference data.
     if constexpr (NumElems == 1) {
       for (size_t i = 0; i < ref_data.size(); ++i) {
-        passed = run_verification(queue, {ref_data[i]}, data_type);
+        passed &= run_verification(queue, {ref_data[i]}, data_type);
       }
     } else {
-      passed = run_verification(queue, ref_data, data_type);
+      passed &= run_verification(queue, ref_data, data_type);
     }
     return passed;
   }
