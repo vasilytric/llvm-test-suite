@@ -19,17 +19,17 @@
 #include <cmath>
 
 namespace esimd = sycl::ext::intel::experimental::esimd;
-namespace esimd_tests = esimd_test::api::functional::ctors;
 namespace esimd_functional = esimd_test::api::functional;
+
+namespace esimd_test::api::functional::ctors {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct initializer {
   static std::string get_description() { return "initializer"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(DataT init_value, DataT step, DataT *out) {
-    esimd::simd<DataT, NumElems> simd_by_init =
-        esimd::simd<DataT, NumElems>(init_value, step);
+  static void call_simd_ctor(DataT init_value, DataT step, DataT *const out) {
+    const auto simd_by_init = esimd::simd<DataT, NumElems>(init_value, step);
     simd_by_init.copy_to(out);
   }
 };
@@ -40,8 +40,8 @@ struct var_dec {
   static std::string get_description() { return "variable declaration"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(DataT init_value, DataT step, DataT *out) {
-    esimd::simd<DataT, NumElems> simd_by_var_decl(init_value, step);
+  static void call_simd_ctor(DataT init_value, DataT step, DataT *const out) {
+    const esimd::simd<DataT, NumElems> simd_by_var_decl(init_value, step);
     simd_by_var_decl.copy_to(out);
   }
 };
@@ -52,7 +52,7 @@ struct rval_in_express {
   static std::string get_description() { return "rvalue in an expression"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(DataT init_value, DataT step, DataT *out) {
+  static void call_simd_ctor(DataT init_value, DataT step, DataT *const out) {
     esimd::simd<DataT, NumElems> simd_by_rval;
     simd_by_rval = esimd::simd<DataT, NumElems>(init_value, step);
     simd_by_rval.copy_to(out);
@@ -66,7 +66,7 @@ public:
   static std::string get_description() { return "const reference"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(DataT init_value, DataT step, DataT *out) {
+  static void call_simd_ctor(DataT init_value, DataT step, DataT *const out) {
     return call_simd_by_const_ref<DataT, NumElems>(
         esimd::simd<DataT, NumElems>(init_value, step), out);
   }
@@ -75,7 +75,7 @@ private:
   template <typename DataT, int NumElems>
   static void
   call_simd_by_const_ref(const esimd::simd<DataT, NumElems> &simd_by_const_ref,
-                         DataT *out) {
+                         DataT *const out) {
     simd_by_const_ref.copy_to(out);
   }
 };
@@ -101,7 +101,7 @@ struct kernel_for_fill;
 
 // Constructing a value for step and base values that depends on input
 // parameters.
-template <typename DataT, init_val BaseVal> DataT get_base_value() {
+template <typename DataT, init_val BaseVal> DataT get_value() {
   if constexpr (BaseVal == init_val::min) {
     return value<DataT>::lowest();
   } else if constexpr (BaseVal == init_val::max) {
@@ -125,102 +125,150 @@ template <typename DataT, init_val BaseVal> DataT get_base_value() {
   }
 }
 
-// Struct that will be used for invocating of simd constructor.
-template <init_val BaseVal, init_val Step> struct call_simd_struct {
-  template <typename DataT, int NumElems, typename TestCaseT>
-  esimd_tests::shared_vector<DataT>
-  call_simd(sycl::queue &queue, const std::vector<DataT> &ref_data) {
-    esimd_tests::shared_vector<DataT> result{NumElems,
-                                             shared_allocator<DataT>{queue}};
-    esimd_tests::shared_vector<DataT> shared_ref_data{
-        ref_data.begin(), ref_data.end(), shared_allocator<DataT>{queue}};
-    const auto ref = ref_data.data();
-    DataT step_value{get_base_value<DataT, Step>()};
-    DataT base_value{get_base_value<DataT, BaseVal>()};
+template <typename DataT, int NumElems, typename ContextT, init_val BaseVal,
+          init_val Step>
+class FillCtorTestDescription
+    : public TestDescription<DataT, NumElems, ContextT> {
+public:
+  FillCtorTestDescription(size_t index, DataT retrieved_val, DataT expected_val,
+                          const std::string &data_type)
+      : TestDescription<DataT, NumElems, ContextT>(index, retrieved_val,
+                                                   expected_val, data_type) {}
+
+  std::string to_string() const override {
+    std::string log_msg(
+        TestDescription<DataT, NumElems, ContextT>::to_string());
+
+    log_msg += ", with base value: " + init_val_to_string<BaseVal>();
+    log_msg += ", with step value: " + init_val_to_string<Step>();
+
+    return log_msg;
+  }
+
+private:
+  template <init_val Val> std::string init_val_to_string() const {
+    if constexpr (Val == init_val::min) {
+      return "min";
+    } else if constexpr (Val == init_val::max) {
+      return "max";
+    } else if constexpr (Val == init_val::zero) {
+      return "zero";
+    } else if constexpr (Val == init_val::positive) {
+      return "positive";
+    } else if constexpr (Val == init_val::negative) {
+      return "negative";
+    } else if constexpr (Val == init_val::min_half) {
+      return "min_half";
+    } else if constexpr (Val == init_val::max_half) {
+      return "max_half";
+    } else if constexpr (Val == init_val::neg_inf) {
+      return "neg_inf";
+    } else if constexpr (Val == init_val::nan) {
+      return "nan";
+    } else {
+      static_assert(Val != Val, "Unexpected base value value");
+    }
+  }
+};
+
+template <typename DataT, int NumElems, typename TestCaseT, typename BaseVal,
+          typename Step>
+class run_test {
+public:
+  bool operator()(sycl::queue &queue, const std::string &data_type) {
+    static_assert(std::is_same_v<typename BaseVal::value_type, init_val>,
+                  "BaseVal template parameter should be init_val type.");
+    static_assert(std::is_same_v<typename Step::value_type, init_val>,
+                  "Step template parameter should be init_val type.");
+
+    bool passed = true;
+    const std::vector<DataT> ref_data = generate_ref_data<DataT, NumElems>();
+
+    // If current number of elements is equal to one, then run test with each
+    // one value from reference data.
+    // If current number of elements is greater than one, then run tests with
+    // whole reference data.
+    if constexpr (NumElems == 1) {
+      for (size_t i = 0; i < ref_data.size(); ++i) {
+        passed &= run_verification(queue, {ref_data[i]}, data_type);
+      }
+    } else {
+      passed &= run_verification(queue, ref_data, data_type);
+    }
+
+    return passed;
+  }
+
+private:
+  bool run_verification(sycl::queue &queue, const std::vector<DataT> &ref_data,
+                        const std::string &data_type) {
+    assert(ref_data.size() == NumElems &&
+           "Reference data size is not equal to the simd vector length.");
+
+    shared_vector<DataT> result(NumElems, shared_allocator<DataT>(queue));
+
+    const auto step_value = get_value<DataT, Step::value>();
+    const auto base_value = get_value<DataT, BaseVal::value>();
+
     queue.submit([&](sycl::handler &cgh) {
-      const auto ref = ref_data.data();
-      auto out = result.data();
-      cgh.single_task<
-          kernel_for_fill<DataT, NumElems, TestCaseT, BaseVal, Step>>(
+      DataT *const out = result.data();
+
+      cgh.single_task<kernel_for_fill<DataT, NumElems, TestCaseT,
+                                      BaseVal::value, Step::value>>(
           [=]() SYCL_ESIMD_KERNEL {
             TestCaseT::template call_simd_ctor<DataT, NumElems>(
                 base_value, step_value, out);
           });
     });
+    queue.wait_and_throw();
 
-    return result;
-  }
-};
+    bool passed = true;
 
-// Constructing verbose failure message.
-template <int NumElems>
-void on_failure(const std::string &step_value, const std::string &base_value,
-                const std::string &elem_from_ref_data,
-                const std::string &elem_from_result_data,
-                const std::string &data_type,
-                const std::string &test_case_description) {
-  log::fail<NumElems>("Simd by " + test_case_description +
-                          " failed, retrieved: " + elem_from_result_data +
-                          ", expected: " + elem_from_ref_data +
-                          ", with step value: " + step_value +
-                          ", with base value: " + base_value,
-                      data_type);
-}
-
-// Struct for verifying test result, failed test if a retrived value is not
-// equal to an expected value.
-template <init_val BaseVal, init_val Step> struct verify_obtained_result {
-  template <typename DataT, int NumElems>
-  bool verify_test_result(const std::vector<DataT> &ref_data,
-                          const esimd_tests::shared_vector<DataT> &result_data,
-                          const std::string &data_type,
-                          const std::string &test_case_description) {
-    bool pass{true};
-    DataT step_value{get_base_value<DataT, Step>()};
-    DataT base_value{get_base_value<DataT, BaseVal>()};
-    size_t zero_elem{0};
-
-    if (!are_bitwise_equal(ref_data[zero_elem], base_value)) {
-      pass = false;
-      on_failure<NumElems>(std::to_string(step_value),
-                           std::to_string(base_value),
-                           std::to_string(ref_data[zero_elem]),
-                           std::to_string(result_data[zero_elem]), data_type,
-                           test_case_description);
-    }
-    for (size_t i = 1; i < ref_data.size(); ++i) {
-      if (!are_bitwise_equal(
-              result_data[i],
-              static_cast<DataT>(result_data[i - 1] + step_value))) {
+    DataT expected_value = base_value;
+    for (size_t i = 0; i < result.size(); ++i) {
+      // std::isnan() couldn't be called for integral types because it call is
+      // ambiguous GitHub issue for that case:
+      // https://github.com/microsoft/STL/issues/519
+      if (!are_bitwise_equal(result[i], expected_value)) {
         if constexpr (type_traits::is_sycl_floating_point_v<DataT>) {
-          if (std::isnan(result_data[i]) &&
+          if (std::isnan(result[i]) &&
               (std::isnan(step_value) || std::isnan(base_value))) {
             continue;
           }
         }
-        pass = false;
-        on_failure<NumElems>(
-            std::to_string(step_value), std::to_string(base_value),
-            std::to_string(result_data[i - 1] + step_value),
-            std::to_string(result_data[i]), data_type, test_case_description);
+        passed = false;
+
+        const auto description =
+            FillCtorTestDescription<DataT, NumElems, TestCaseT, BaseVal::value,
+                                    Step::value>(i, result[i - 1] + step_value,
+                                                 expected_value, data_type);
+        log::fail(description);
       }
+      expected_value += step_value;
     }
 
-    return pass;
+    return passed;
   }
 };
 
-// Iterating over provided types and dimensions, running test for each of them.
+// Iterating over provided types and dimensions, running test for each of
+// them.
 template <typename TestT, init_val BaseVal, init_val Step, typename... Types,
-          int... Ints>
-bool run_verifying(sycl::queue &queue,
-                   const esimd_functional::values_pack<Ints...> &dimensions,
-                   const esimd_functional::named_type_pack<Types...> &types) {
-  bool pass{true};
+          int... Dims>
+bool run_verification(
+    sycl::queue &queue,
+    const esimd_functional::values_pack<Dims...> &dimensions,
+    const esimd_functional::named_type_pack<Types...> &types) {
 
-  pass &= esimd_functional::for_all_types_and_dims<esimd_tests::test, TestT>(
-      types, dimensions, queue, verify_obtained_result<BaseVal, Step>{},
-      call_simd_struct<BaseVal, Step>{});
+  typedef std::integral_constant<init_val, BaseVal> base_value;
+  typedef std::integral_constant<init_val, Step> step_value;
 
-  return pass;
+  bool passed = true;
+  passed &= esimd_functional::for_all_types_and_dims<run_test, TestT,
+                                                     base_value, step_value>(
+      types, dimensions, queue);
+
+  return passed;
 }
+
+} // namespace esimd_test::api::functional::ctors

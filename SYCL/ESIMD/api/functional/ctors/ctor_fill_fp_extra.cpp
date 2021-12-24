@@ -28,19 +28,23 @@ using namespace esimd_test::api::functional::ctors;
 using namespace esimd_test::api::functional;
 
 int main(int argc, char **argv) {
-  sycl::queue queue{};
+  sycl::queue queue(esimd_test::ESIMDSelector{},
+                    esimd_test::createExceptionHandler());
 
-  bool pass{true};
-  auto fp_types{get_tested_types<tested_types::fp_extra>()};
-  pass &= run_verifying<var_dec, init_val::neg_inf, init_val::zero>(
+  bool passed = true;
+
+  const auto fp_types = get_tested_types<tested_types::fp_extra>();
+  const auto single_dim = values_pack<8>();
+
+  passed &= run_verification<var_dec, init_val::neg_inf, init_val::zero>(
       queue, single_dim, fp_types);
-  pass &= run_verifying<var_dec, init_val::max, init_val::neg_inf>(
+  passed &= run_verification<var_dec, init_val::max, init_val::neg_inf>(
       queue, single_dim, fp_types);
-  pass &= run_verifying<var_dec, init_val::nan, init_val::negative>(
+  passed &= run_verification<var_dec, init_val::nan, init_val::negative>(
       queue, single_dim, fp_types);
-  pass &= run_verifying<var_dec, init_val::zero, init_val::nan>(
+  passed &= run_verification<var_dec, init_val::zero, init_val::nan>(
       queue, single_dim, fp_types);
 
-  std::cout << (pass ? "=== Test passed\n" : "=== Test FAILED\n");
-  return pass ? 0 : 1;
+  std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
+  return passed ? 0 : 1;
 }
