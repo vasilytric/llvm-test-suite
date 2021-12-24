@@ -91,7 +91,11 @@ enum class init_val {
   neg_inf,
   nan,
   positive,
-  negative
+  negative,
+  denorm,
+  inexact,
+  ulp,
+  ulp_half
 };
 
 // Dummy kernel for submitting some code into device side.
@@ -101,27 +105,46 @@ struct kernel_for_fill;
 
 // Constructing a value for step and base values that depends on input
 // parameters.
-template <typename DataT, init_val BaseVal> DataT get_value() {
-  if constexpr (BaseVal == init_val::min) {
+template <typename DataT, init_val Value>
+DataT get_value(DataT base_val = DataT()) {
+  if constexpr (Value == init_val::min) {
     return value<DataT>::lowest();
-  } else if constexpr (BaseVal == init_val::max) {
+  } else if constexpr (Value == init_val::max) {
     return value<DataT>::max();
-  } else if constexpr (BaseVal == init_val::zero) {
+  } else if constexpr (Value == init_val::zero) {
     return 0;
-  } else if constexpr (BaseVal == init_val::positive) {
+  } else if constexpr (Value == init_val::positive) {
     return static_cast<DataT>(1.25);
-  } else if constexpr (BaseVal == init_val::negative) {
+  } else if constexpr (Value == init_val::negative) {
     return static_cast<DataT>(-10.75);
-  } else if constexpr (BaseVal == init_val::min_half) {
+  } else if constexpr (Value == init_val::min_half) {
     return value<DataT>::lowest() / 2;
-  } else if constexpr (BaseVal == init_val::max_half) {
+  } else if constexpr (Value == init_val::max_half) {
     return value<DataT>::max() / 2;
-  } else if constexpr (BaseVal == init_val::neg_inf) {
+  } else if constexpr (Value == init_val::neg_inf) {
     return -value<DataT>::inf();
-  } else if constexpr (BaseVal == init_val::nan) {
+  } else if constexpr (Value == init_val::nan) {
     return value<DataT>::nan();
+  } else if constexpr (Value == init_val::denorm) {
+    return value<DataT>::denorm_min();
+  } else if constexpr (Value == init_val::inexact) {
+    return 0.1;
+  } else if constexpr (Value == init_val::ulp || Value == init_val::ulp_half) {
+    DataT next_step_val{};
+
+    if constexpr (std::is_same_v<DataT, sycl::half>) {
+      next_step_val = static_cast<sycl::half>(
+          (sycl::nextafter(base_val, sycl::half(1.f)) - base_val) * 8192);
+    } else {
+      next_step_val = std::nextafter(base_val, DataT(1.f)) - base_val;
+    }
+    if (Value == init_val::ulp_half) {
+      next_step_val = next_step_val / 2;
+    }
+
+    return next_step_val;
   } else {
-    static_assert(BaseVal != BaseVal, "Unexpected base value value");
+    static_assert(Value != Value, "Unexpected value");
   }
 }
 
@@ -165,6 +188,14 @@ private:
       return "neg_inf";
     } else if constexpr (Val == init_val::nan) {
       return "nan";
+    } else if constexpr (Val == init_val::denorm) {
+      return "denorm";
+    } else if constexpr (Val == init_val::inexact) {
+      return "inexact";
+    } else if constexpr (Val == init_val::ulp) {
+      return "ulp";
+    } else if constexpr (Val == init_val::ulp_half) {
+      return "ulp_half";
     } else {
       static_assert(Val != Val, "Unexpected base value value");
     }
@@ -207,8 +238,8 @@ private:
 
     shared_vector<DataT> result(NumElems, shared_allocator<DataT>(queue));
 
-    const auto step_value = get_value<DataT, Step::value>();
     const auto base_value = get_value<DataT, BaseVal::value>();
+    const auto step_value = get_value<DataT, Step::value>(base_value);
 
     queue.submit([&](sycl::handler &cgh) {
       DataT *const out = result.data();

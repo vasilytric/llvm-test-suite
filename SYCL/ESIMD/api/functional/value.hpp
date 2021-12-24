@@ -89,7 +89,7 @@ template <typename DataT> struct value {
     if constexpr (std::is_same_v<DataT, sycl::half>) {
       return details::half_from_bytes(0b00000000u, 0b00000001u);
     } else {
-      return std::numeric_limits<DataT>::denorm_min;
+      return std::numeric_limits<DataT>::denorm_min();
     }
   }
 
