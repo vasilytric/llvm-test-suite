@@ -112,6 +112,15 @@ template <typename DataT> struct value {
       return std::numeric_limits<DataT>::max();
     }
   }
+
+  static DataT ulp(DataT base_val) {
+    if constexpr (std::is_same_v<DataT, sycl::half>) {
+      return static_cast<sycl::half>(
+          (sycl::nextafter(base_val, sycl::half(1.f)) - base_val) * 8192);
+    } else {
+      return std::nextafter(base_val, DataT(1.f)) - base_val;
+    }
+  }
 };
 
 // Provides std::vector with the reference data according to the currently

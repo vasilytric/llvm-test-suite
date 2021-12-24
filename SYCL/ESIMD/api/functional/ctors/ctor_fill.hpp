@@ -129,20 +129,10 @@ DataT get_value(DataT base_val = DataT()) {
     return value<DataT>::denorm_min();
   } else if constexpr (Value == init_val::inexact) {
     return 0.1;
-  } else if constexpr (Value == init_val::ulp || Value == init_val::ulp_half) {
-    DataT next_step_val{};
-
-    if constexpr (std::is_same_v<DataT, sycl::half>) {
-      next_step_val = static_cast<sycl::half>(
-          (sycl::nextafter(base_val, sycl::half(1.f)) - base_val) * 8192);
-    } else {
-      next_step_val = std::nextafter(base_val, DataT(1.f)) - base_val;
-    }
-    if (Value == init_val::ulp_half) {
-      next_step_val = next_step_val / 2;
-    }
-
-    return next_step_val;
+  } else if constexpr (Value == init_val::ulp) {
+    return value<DataT>::ulp(base_val);
+  } else if (Value == init_val::ulp_half) {
+    return value<DataT>::ulp(base_val) / 2;
   } else {
     static_assert(Value != Value, "Unexpected value");
   }
