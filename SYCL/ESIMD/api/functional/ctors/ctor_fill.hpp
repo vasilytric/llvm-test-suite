@@ -212,30 +212,6 @@ public:
     static_assert(std::is_same_v<typename Step::value_type, init_val>,
                   "Step template parameter should be init_val type.");
 
-    bool passed = true;
-    const std::vector<DataT> ref_data = generate_ref_data<DataT, NumElems>();
-
-    // If current number of elements is equal to one, then run test with each
-    // one value from reference data.
-    // If current number of elements is greater than one, then run tests with
-    // whole reference data.
-    if constexpr (NumElems == 1) {
-      for (size_t i = 0; i < ref_data.size(); ++i) {
-        passed &= run_verification(queue, {ref_data[i]}, data_type);
-      }
-    } else {
-      passed &= run_verification(queue, ref_data, data_type);
-    }
-
-    return passed;
-  }
-
-private:
-  bool run_verification(sycl::queue &queue, const std::vector<DataT> &ref_data,
-                        const std::string &data_type) {
-    assert(ref_data.size() == NumElems &&
-           "Reference data size is not equal to the simd vector length.");
-
     shared_vector<DataT> result(NumElems, shared_allocator<DataT>(queue));
 
     const auto base_value = get_value<DataT, BaseVal::value>();
