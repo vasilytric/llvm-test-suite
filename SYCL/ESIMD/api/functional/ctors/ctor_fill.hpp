@@ -161,7 +161,7 @@ public:
 private:
   template <init_val Val> std::string init_val_to_string() const {
     if constexpr (Val == init_val::min) {
-      return "min";
+      return "lowest";
     } else if constexpr (Val == init_val::max) {
       return "max";
     } else if constexpr (Val == init_val::zero) {
