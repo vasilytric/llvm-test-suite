@@ -27,47 +27,51 @@ using namespace sycl::ext::intel::experimental::esimd;
 using namespace esimd_test::api::functional::ctors;
 using namespace esimd_test::api::functional;
 
-int main(int argc, char **argv) {
+int main(int, char **) {
   sycl::queue queue(esimd_test::ESIMDSelector{},
                     esimd_test::createExceptionHandler());
 
   bool passed = true;
 
-  const auto one_and_eighth_dims = values_pack<1, 8>();
+  const auto two_dims = values_pack<1, 8>();
   const auto char_int_types = named_type_pack<char, int>({"char", "int"});
 
+  // Run for specific combinations of types, vector length, base and step values
+  // and invocation contexts.
+  // The first init_val value it's a base value and the second init_val value
+  // it's a step value.
   passed &= run_verification<initializer, init_val::min_half, init_val::zero>(
-      queue, one_and_eighth_dims, char_int_types);
+      queue, two_dims, char_int_types);
 
   passed &= run_verification<initializer, init_val::zero, init_val::positive>(
-      queue, one_and_eighth_dims, char_int_types);
+      queue, two_dims, char_int_types);
   passed &=
       run_verification<initializer, init_val::min_half, init_val::positive>(
-          queue, one_and_eighth_dims, char_int_types);
+          queue, two_dims, char_int_types);
 
   passed &= run_verification<var_dec, init_val::min_half, init_val::zero>(
-      queue, one_and_eighth_dims, char_int_types);
+      queue, two_dims, char_int_types);
   passed &= run_verification<var_dec, init_val::zero, init_val::positive>(
-      queue, one_and_eighth_dims, char_int_types);
+      queue, two_dims, char_int_types);
   passed &= run_verification<var_dec, init_val::min_half, init_val::positive>(
-      queue, one_and_eighth_dims, char_int_types);
+      queue, two_dims, char_int_types);
 
   passed &=
       run_verification<rval_in_express, init_val::min_half, init_val::zero>(
-          queue, one_and_eighth_dims, char_int_types);
+          queue, two_dims, char_int_types);
   passed &=
       run_verification<rval_in_express, init_val::zero, init_val::positive>(
-          queue, one_and_eighth_dims, char_int_types);
+          queue, two_dims, char_int_types);
   passed &=
       run_verification<rval_in_express, init_val::min_half, init_val::positive>(
-          queue, one_and_eighth_dims, char_int_types);
+          queue, two_dims, char_int_types);
 
   passed &= run_verification<const_ref, init_val::min_half, init_val::zero>(
-      queue, one_and_eighth_dims, char_int_types);
+      queue, two_dims, char_int_types);
   passed &= run_verification<const_ref, init_val::zero, init_val::positive>(
-      queue, one_and_eighth_dims, char_int_types);
+      queue, two_dims, char_int_types);
   passed &= run_verification<const_ref, init_val::min_half, init_val::positive>(
-      queue, one_and_eighth_dims, char_int_types);
+      queue, two_dims, char_int_types);
 
   const auto all_dims = values_pack<1, 8, 16, 32>();
   const auto all_types = get_tested_types<tested_types::all>();

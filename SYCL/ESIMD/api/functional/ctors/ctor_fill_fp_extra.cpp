@@ -16,7 +16,7 @@
 // RUN: false
 // XFAIL: *
 // TODO The simd can't be constructed with sycl::half data type. The issue was
-// created (https://github.com/intel/llvm/issues/5077) and the this test must be
+// created (https://github.com/intel/llvm/issues/5077) and the test must be
 // enabled when it is resolved.
 //
 // Test for esimd fill constructor for extra fp types.
@@ -27,7 +27,7 @@ using namespace sycl::ext::intel::experimental::esimd;
 using namespace esimd_test::api::functional::ctors;
 using namespace esimd_test::api::functional;
 
-int main(int argc, char **argv) {
+int main(int, char **) {
   sycl::queue queue(esimd_test::ESIMDSelector{},
                     esimd_test::createExceptionHandler());
 
@@ -36,6 +36,10 @@ int main(int argc, char **argv) {
   const auto fp_types = get_tested_types<tested_types::fp_extra>();
   const auto single_dim = values_pack<8>();
 
+  // Run for specific combinations of types, vector length, base and step values
+  // and invocation contexts.
+  // The first init_val value it's a base value and the second init_val value
+  // it's a step value.
   passed &= run_verification<var_dec, init_val::neg_inf, init_val::zero>(
       queue, single_dim, fp_types);
   passed &= run_verification<var_dec, init_val::max, init_val::neg_inf>(
