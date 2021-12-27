@@ -131,10 +131,10 @@ DataT get_value(DataT base_val = DataT()) {
     return 0.1;
   } else if constexpr (Value == init_val::ulp) {
     return value<DataT>::ulp(base_val);
-  } else if (Value == init_val::ulp_half) {
+  } else if constexpr (Value == init_val::ulp_half) {
     return value<DataT>::ulp(base_val) / 2;
   } else {
-    static_assert(Value != Value, "Unexpected value");
+    static_assert(Value != Value, "Unexpected enum value");
   }
 }
 
@@ -187,7 +187,7 @@ private:
     } else if constexpr (Val == init_val::ulp_half) {
       return "ulp_half";
     } else {
-      static_assert(Val != Val, "Unexpected base value value");
+      static_assert(Val != Val, "Unexpected enum value");
     }
   }
 };
@@ -219,32 +219,45 @@ public:
     });
     queue.wait_and_throw();
 
-    bool passed = true;
+    if (!are_bitwise_equal(result[0], base_value)) {
+      fail_test(0, result[0], base_value, data_type);
+    }
 
     DataT expected_value = base_value;
-    for (size_t i = 0; i < result.size(); ++i) {
-      // std::isnan() couldn't be called for integral types because it call is
-      // ambiguous GitHub issue for that case:
-      // https://github.com/microsoft/STL/issues/519
-      if (!are_bitwise_equal(result[i], expected_value)) {
-        if constexpr (type_traits::is_sycl_floating_point_v<DataT>) {
-          if (std::isnan(result[i]) &&
-              (std::isnan(step_value) || std::isnan(base_value))) {
-            continue;
+    if constexpr (BaseVal::value == init_val::nan ||
+                  Step::value == init_val::nan) {
+      for (size_t i = 1; i < result.size(); ++i) {
+        if (!std::isnan(result[i])) {
+          if (!are_bitwise_equal(result[i], expected_value)) {
+            fail_test(i, result[i], expected_value, data_type);
           }
         }
-        passed = false;
-
-        const auto description =
-            FillCtorTestDescription<DataT, NumElems, TestCaseT, BaseVal::value,
-                                    Step::value>(i, result[i - 1] + step_value,
-                                                 expected_value, data_type);
-        log::fail(description);
+        expected_value += step_value;
+      }
+    } else {
+      for (size_t i = 1; i < result.size(); ++i) {
+        if (!are_bitwise_equal(result[i], expected_value)) {
+          fail_test(i, result[i], expected_value, data_type);
+        }
       }
       expected_value += step_value;
     }
 
-    return passed;
+    return m_passed;
+  }
+
+private:
+  bool m_passed = true;
+
+  void fail_test(size_t step, DataT retrieved, DataT expected,
+                 const std::string &data_type) {
+    m_passed = false;
+
+    const auto description =
+        FillCtorTestDescription<DataT, NumElems, TestCaseT, BaseVal::value,
+                                Step::value>(step, retrieved, expected,
+                                             data_type);
+    log::fail(description);
   }
 };
 
