@@ -113,14 +113,18 @@ template <typename DataT> struct value {
     }
   }
 
-  static DataT ulp(DataT base_val) {
+  static DataT ulp(DataT base_val, DataT direction) {
     if constexpr (std::is_same_v<DataT, sycl::half>) {
       return static_cast<sycl::half>(
-          (sycl::nextafter(base_val, sycl::half(1.f)) - base_val) * 8192);
+          (sycl::nextafter(base_val, direction) - base_val) * 8192);
     } else {
-      return std::nextafter(base_val, DataT(1.f)) - base_val;
+      return std::nextafter(base_val, direction) - base_val;
     }
   }
+
+  static DataT pos_ulp(DataT base_val) { return ulp(base_val, inf()); }
+
+  static DataT neg_ulp(DataT base_val) { return ulp(base_val, -inf()); }
 };
 
 // Provides std::vector with the reference data according to the currently

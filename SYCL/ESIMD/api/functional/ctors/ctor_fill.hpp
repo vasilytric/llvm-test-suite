@@ -130,9 +130,9 @@ DataT get_value(DataT base_val = DataT()) {
   } else if constexpr (Value == init_val::inexact) {
     return 0.1;
   } else if constexpr (Value == init_val::ulp) {
-    return value<DataT>::ulp(base_val);
+    return value<DataT>::pos_ulp(base_val);
   } else if constexpr (Value == init_val::ulp_half) {
-    return value<DataT>::ulp(base_val) / 2;
+    return value<DataT>::pos_ulp(base_val) / 2;
   } else {
     static_assert(Value != Value, "Unexpected enum value");
   }
