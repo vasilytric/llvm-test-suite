@@ -1,4 +1,4 @@
-//==------- ctor_fill_accuracy.cpp  - DPC++ ESIMD on-device test -----------==//
+//==------- ctor_fill_accuracy_core.cpp  - DPC++ ESIMD on-device test ------==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -39,6 +39,10 @@ int main(int, char **) {
   const auto fp_types = get_tested_types<tested_types::fp>();
   const auto single_dim = values_pack<8>();
 
+  // Run for specific combinations of types, base and step values and vector
+  // length.
+  // The first init_val value it's a base value and the second init_val value
+  // it's a step value.
   passed &= run_verification<var_dec, init_val::denorm, init_val::ulp>(
       queue, single_dim, fp_types);
   passed &= run_verification<var_dec, init_val::inexact, init_val::ulp>(
