@@ -138,6 +138,38 @@ DataT get_value(DataT base_val = DataT()) {
   }
 }
 
+template <init_val Val> std::string init_val_to_string() {
+  if constexpr (Val == init_val::min) {
+    return "lowest";
+  } else if constexpr (Val == init_val::max) {
+    return "max";
+  } else if constexpr (Val == init_val::zero) {
+    return "zero";
+  } else if constexpr (Val == init_val::positive) {
+    return "positive";
+  } else if constexpr (Val == init_val::negative) {
+    return "negative";
+  } else if constexpr (Val == init_val::min_half) {
+    return "min_half";
+  } else if constexpr (Val == init_val::max_half) {
+    return "max_half";
+  } else if constexpr (Val == init_val::neg_inf) {
+    return "neg_inf";
+  } else if constexpr (Val == init_val::nan) {
+    return "nan";
+  } else if constexpr (Val == init_val::denorm) {
+    return "denorm";
+  } else if constexpr (Val == init_val::inexact) {
+    return "inexact";
+  } else if constexpr (Val == init_val::ulp) {
+    return "ulp";
+  } else if constexpr (Val == init_val::ulp_half) {
+    return "ulp_half";
+  } else {
+    static_assert(Val != Val, "Unexpected enum value");
+  }
+}
+
 template <typename DataT, int NumElems, typename ContextT, init_val BaseVal,
           init_val Step>
 class FillCtorTestDescription
@@ -156,39 +188,6 @@ public:
     log_msg += ", with step value: " + init_val_to_string<Step>();
 
     return log_msg;
-  }
-
-private:
-  template <init_val Val> std::string init_val_to_string() const {
-    if constexpr (Val == init_val::min) {
-      return "lowest";
-    } else if constexpr (Val == init_val::max) {
-      return "max";
-    } else if constexpr (Val == init_val::zero) {
-      return "zero";
-    } else if constexpr (Val == init_val::positive) {
-      return "positive";
-    } else if constexpr (Val == init_val::negative) {
-      return "negative";
-    } else if constexpr (Val == init_val::min_half) {
-      return "min_half";
-    } else if constexpr (Val == init_val::max_half) {
-      return "max_half";
-    } else if constexpr (Val == init_val::neg_inf) {
-      return "neg_inf";
-    } else if constexpr (Val == init_val::nan) {
-      return "nan";
-    } else if constexpr (Val == init_val::denorm) {
-      return "denorm";
-    } else if constexpr (Val == init_val::inexact) {
-      return "inexact";
-    } else if constexpr (Val == init_val::ulp) {
-      return "ulp";
-    } else if constexpr (Val == init_val::ulp_half) {
-      return "ulp_half";
-    } else {
-      static_assert(Val != Val, "Unexpected enum value");
-    }
   }
 };
 
@@ -218,46 +217,55 @@ public:
           });
     });
     queue.wait_and_throw();
-
+    bool passed = true;
     if (!are_bitwise_equal(result[0], base_value)) {
-      fail_test(0, result[0], base_value, data_type);
+      // Verify the base value was passed as-is
+      passed = fail_test(0, result[0], base_value, data_type);
     }
 
     DataT expected_value = base_value;
-    if constexpr (BaseVal::value == init_val::nan ||
-                  Step::value == init_val::nan) {
-      for (size_t i = 1; i < result.size(); ++i) {
-        if (!std::isnan(result[i])) {
-          if (!are_bitwise_equal(result[i], expected_value)) {
-            fail_test(i, result[i], expected_value, data_type);
-          }
-        }
-        expected_value += step_value;
-      }
-    } else {
-      for (size_t i = 1; i < result.size(); ++i) {
-        if (!are_bitwise_equal(result[i], expected_value)) {
-          fail_test(i, result[i], expected_value, data_type);
-        }
-      }
-      expected_value += step_value;
-    }
+    // Verify the step value works as expected being passed to the fill
+    // constructor.
+    for (size_t i = 1; i < result.size(); ++i) {
+      if constexpr (BaseVal::value == init_val::nan ||
+                    Step::value == init_val::nan) {
 
-    return m_passed;
+        if (!std::isnan(result[i])) {
+          passed = false;
+
+          // TODO: Make ITestDescription architecture more flexible
+          std::string log_msg = "Failed for simd<";
+          log_msg += data_type + ", " + std::to_string(NumElems) + ">";
+          log_msg += ", with context: " + TestCaseT::get_description();
+          log_msg += ". The element at index: " + std::to_string(i) +
+                     ", is not nan, but it should.";
+          log_msg +=
+              ", with base value: " + init_val_to_string<BaseVal::value>();
+          log_msg += ", with step value: " + init_val_to_string<Step::value>();
+
+          log::note(log_msg);
+        }
+      } else {
+
+        expected_value += step_value;
+        if (!are_bitwise_equal(result[i], expected_value)) {
+          passed = fail_test(i, result[i], expected_value, data_type);
+        }
+      }
+    }
+    return passed;
   }
 
 private:
-  bool m_passed = true;
-
-  void fail_test(size_t step, DataT retrieved, DataT expected,
+  bool fail_test(size_t index, DataT retrieved, DataT expected,
                  const std::string &data_type) {
-    m_passed = false;
-
     const auto description =
         FillCtorTestDescription<DataT, NumElems, TestCaseT, BaseVal::value,
-                                Step::value>(step, retrieved, expected,
+                                Step::value>(index, retrieved, expected,
                                              data_type);
     log::fail(description);
+
+    return false;
   }
 };
 
