@@ -19,8 +19,9 @@
 // function. The issue was created (https://github.com/intel/llvm/issues/5112)
 // and the test must be enabled when it is resolved.
 //
-// Test for esimd constructor from vector.
-// This test use different data types and simd constructor invocation contexts.
+// Test for simd constructor from vector.
+// This test uses different data types, dimensionality and different simd
+// constructor invocation contexts.
 // The test do the following actions:
 //  - call init_simd.data() to retreive vector_type and then provide it to the
 //    simd constructor
@@ -36,8 +37,8 @@ struct initializer {
   static std::string get_description() { return "initializer"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(const DataT *const input_data, DataT *const out) {
-    simd<DataT, NumElems> init_simd(input_data);
+  static void call_simd_ctor(const DataT *const ref_data, DataT *const out) {
+    simd<DataT, NumElems> init_simd(ref_data);
     const auto simd_by_init = simd<DataT, NumElems>(init_simd.data());
     simd_by_init.copy_to(out);
   }
@@ -49,8 +50,8 @@ struct var_decl {
   static std::string get_description() { return "variable declaration"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(const DataT *const input_data, DataT *const out) {
-    simd<DataT, NumElems> init_simd(input_data);
+  static void call_simd_ctor(const DataT *const ref_data, DataT *const out) {
+    simd<DataT, NumElems> init_simd(ref_data);
     simd<DataT, NumElems> simd_by_var_decl(init_simd.data());
     simd_by_var_decl.copy_to(out);
   }
@@ -62,8 +63,8 @@ struct rval_in_expr {
   static std::string get_description() { return "rvalue in an expression"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(const DataT *const input_data, DataT *const out) {
-    simd<DataT, NumElems> init_simd(input_data);
+  static void call_simd_ctor(const DataT *const ref_data, DataT *const out) {
+    simd<DataT, NumElems> init_simd(ref_data);
     simd<DataT, NumElems> simd_by_rval;
     simd_by_rval = simd<DataT, NumElems>(init_simd.data());
     simd_by_rval.copy_to(out);
@@ -77,8 +78,8 @@ public:
   static std::string get_description() { return "const reference"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(const DataT *const input_data, DataT *const out) {
-    simd<DataT, NumElems> init_simd(input_data);
+  static void call_simd_ctor(const DataT *const ref_data, DataT *const out) {
+    simd<DataT, NumElems> init_simd(ref_data);
     call_simd_by_const_ref<DataT, NumElems>(
         simd<DataT, NumElems>(init_simd.data()), out);
   }
@@ -162,6 +163,8 @@ int main(int, char **) {
   const auto types = get_tested_types<tested_types::all>();
   const auto dims = get_all_dimensions();
 
+  // Run for specific combinations of types, vector length and invocation
+  // contexts.
   passed &= for_all_types_and_dims<run_test, initializer>(types, dims, queue);
   passed &= for_all_types_and_dims<run_test, var_decl>(types, dims, queue);
   passed &= for_all_types_and_dims<run_test, rval_in_expr>(types, dims, queue);
