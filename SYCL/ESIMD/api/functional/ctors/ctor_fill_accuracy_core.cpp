@@ -42,16 +42,21 @@ int main(int, char **) {
   // length.
   // The first init_val value it's a base value and the second init_val value
   // it's a step value.
-  passed &= run_verification<var_dec, init_val::denorm, init_val::ulp>(
-      queue, single_dim, fp_types);
-  passed &= run_verification<var_dec, init_val::inexact, init_val::ulp>(
-      queue, single_dim, fp_types);
-  passed &= run_verification<var_dec, init_val::min, init_val::ulp>(
-      queue, single_dim, fp_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::denorm,
+                                    ctors::init_val::ulp>(queue, single_dim,
+                                                          fp_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::inexact,
+                                    ctors::init_val::ulp>(queue, single_dim,
+                                                          fp_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::min,
+                                    ctors::init_val::ulp>(queue, single_dim,
+                                                          fp_types);
 
-  passed &= run_verification<var_dec, init_val::inexact, init_val::ulp_half>(
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::inexact,
+                                    ctors::init_val::ulp_half>(
       queue, single_dim, fp_types);
-  passed &= run_verification<var_dec, init_val::min, init_val::ulp_half>(
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::min,
+                                    ctors::init_val::ulp_half>(
       queue, single_dim, fp_types);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");

@@ -39,14 +39,18 @@ int main(int, char **) {
   // and invocation contexts.
   // The first init_val value it's a base value and the second init_val value
   // it's a step value.
-  passed &= run_verification<var_dec, init_val::neg_inf, init_val::zero>(
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::neg_inf,
+                                    ctors::init_val::zero>(queue, single_dim,
+                                                           fp_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::max,
+                                    ctors::init_val::neg_inf>(queue, single_dim,
+                                                              fp_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::nan,
+                                    ctors::init_val::negative>(
       queue, single_dim, fp_types);
-  passed &= run_verification<var_dec, init_val::max, init_val::neg_inf>(
-      queue, single_dim, fp_types);
-  passed &= run_verification<var_dec, init_val::nan, init_val::negative>(
-      queue, single_dim, fp_types);
-  passed &= run_verification<var_dec, init_val::zero, init_val::nan>(
-      queue, single_dim, fp_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::zero,
+                                    ctors::init_val::nan>(queue, single_dim,
+                                                          fp_types);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

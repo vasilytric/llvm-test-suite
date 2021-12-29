@@ -39,80 +39,109 @@ int main(int, char **) {
   // and invocation contexts.
   // The first init_val value it's a base value and the second init_val value
   // it's a step value.
-  passed &= run_verification<initializer, init_val::min_half, init_val::zero>(
-      queue, two_dims, char_int_types);
-
-  passed &= run_verification<initializer, init_val::zero, init_val::positive>(
-      queue, two_dims, char_int_types);
   passed &=
-      run_verification<initializer, init_val::min_half, init_val::positive>(
-          queue, two_dims, char_int_types);
+      ctors::run_verification<ctors::initializer, ctors::init_val::min_half,
+                              ctors::init_val::zero>(queue, two_dims,
+                                                     char_int_types);
 
-  passed &= run_verification<var_dec, init_val::min_half, init_val::zero>(
-      queue, two_dims, char_int_types);
-  passed &= run_verification<var_dec, init_val::zero, init_val::positive>(
-      queue, two_dims, char_int_types);
-  passed &= run_verification<var_dec, init_val::min_half, init_val::positive>(
-      queue, two_dims, char_int_types);
+  passed &= ctors::run_verification<ctors::initializer, ctors::init_val::zero,
+                                    ctors::init_val::positive>(queue, two_dims,
+                                                               char_int_types);
+  passed &=
+      ctors::run_verification<ctors::initializer, ctors::init_val::min_half,
+                              ctors::init_val::positive>(queue, two_dims,
+                                                         char_int_types);
+
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::min_half,
+                                    ctors::init_val::zero>(queue, two_dims,
+                                                           char_int_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::zero,
+                                    ctors::init_val::positive>(queue, two_dims,
+                                                               char_int_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::min_half,
+                                    ctors::init_val::positive>(queue, two_dims,
+                                                               char_int_types);
 
   passed &=
-      run_verification<rval_in_express, init_val::min_half, init_val::zero>(
-          queue, two_dims, char_int_types);
+      ctors::run_verification<ctors::rval_in_express, ctors::init_val::min_half,
+                              ctors::init_val::zero>(queue, two_dims,
+                                                     char_int_types);
   passed &=
-      run_verification<rval_in_express, init_val::zero, init_val::positive>(
-          queue, two_dims, char_int_types);
+      ctors::run_verification<ctors::rval_in_express, ctors::init_val::zero,
+                              ctors::init_val::positive>(queue, two_dims,
+                                                         char_int_types);
   passed &=
-      run_verification<rval_in_express, init_val::min_half, init_val::positive>(
-          queue, two_dims, char_int_types);
+      ctors::run_verification<ctors::rval_in_express, ctors::init_val::min_half,
+                              ctors::init_val::positive>(queue, two_dims,
+                                                         char_int_types);
 
-  passed &= run_verification<const_ref, init_val::min_half, init_val::zero>(
-      queue, two_dims, char_int_types);
-  passed &= run_verification<const_ref, init_val::zero, init_val::positive>(
-      queue, two_dims, char_int_types);
-  passed &= run_verification<const_ref, init_val::min_half, init_val::positive>(
-      queue, two_dims, char_int_types);
+  passed &= ctors::run_verification<ctors::const_ref, ctors::init_val::min_half,
+                                    ctors::init_val::zero>(queue, two_dims,
+                                                           char_int_types);
+  passed &= ctors::run_verification<ctors::const_ref, ctors::init_val::zero,
+                                    ctors::init_val::positive>(queue, two_dims,
+                                                               char_int_types);
+  passed &= ctors::run_verification<ctors::const_ref, ctors::init_val::min_half,
+                                    ctors::init_val::positive>(queue, two_dims,
+                                                               char_int_types);
 
   const auto all_dims = values_pack<1, 8, 16, 32>();
   const auto all_types = get_tested_types<tested_types::all>();
-  passed &= run_verification<var_dec, init_val::min, init_val::zero>(
-      queue, all_dims, all_types);
-  passed &= run_verification<var_dec, init_val::max_half, init_val::zero>(
-      queue, all_dims, all_types);
-  passed &= run_verification<var_dec, init_val::zero, init_val::positive>(
-      queue, all_dims, all_types);
-  passed &= run_verification<var_dec, init_val::max_half, init_val::positive>(
-      queue, all_dims, all_types);
-  passed &= run_verification<var_dec, init_val::zero, init_val::negative>(
-      queue, all_dims, all_types);
-  passed &= run_verification<var_dec, init_val::max_half, init_val::negative>(
-      queue, all_dims, all_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::min,
+                                    ctors::init_val::zero>(queue, all_dims,
+                                                           all_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::max_half,
+                                    ctors::init_val::zero>(queue, all_dims,
+                                                           all_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::zero,
+                                    ctors::init_val::positive>(queue, all_dims,
+                                                               all_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::max_half,
+                                    ctors::init_val::positive>(queue, all_dims,
+                                                               all_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::zero,
+                                    ctors::init_val::negative>(queue, all_dims,
+                                                               all_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::max_half,
+                                    ctors::init_val::negative>(queue, all_dims,
+                                                               all_types);
 
   const auto single_dim = values_pack<8>();
   const auto uint_types = get_tested_types<tested_types::uint>();
-  passed &= run_verification<var_dec, init_val::min, init_val::positive>(
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::min,
+                                    ctors::init_val::positive>(
       queue, single_dim, uint_types);
-  passed &= run_verification<var_dec, init_val::min, init_val::negative>(
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::min,
+                                    ctors::init_val::negative>(
       queue, single_dim, uint_types);
-  passed &= run_verification<var_dec, init_val::max, init_val::positive>(
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::max,
+                                    ctors::init_val::positive>(
       queue, single_dim, uint_types);
-  passed &= run_verification<var_dec, init_val::max, init_val::negative>(
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::max,
+                                    ctors::init_val::negative>(
       queue, single_dim, uint_types);
 
   const auto sint_types = get_tested_types<tested_types::sint>();
-  passed &= run_verification<var_dec, init_val::min, init_val::positive>(
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::min,
+                                    ctors::init_val::positive>(
       queue, single_dim, uint_types);
-  passed &= run_verification<var_dec, init_val::max, init_val::negative>(
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::max,
+                                    ctors::init_val::negative>(
       queue, single_dim, uint_types);
 
   const auto fp_types = get_tested_types<tested_types::fp>();
-  passed &= run_verification<var_dec, init_val::neg_inf, init_val::max>(
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::neg_inf,
+                                    ctors::init_val::max>(queue, single_dim,
+                                                          fp_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::max,
+                                    ctors::init_val::neg_inf>(queue, single_dim,
+                                                              fp_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::nan,
+                                    ctors::init_val::negative>(
       queue, single_dim, fp_types);
-  passed &= run_verification<var_dec, init_val::max, init_val::neg_inf>(
-      queue, single_dim, fp_types);
-  passed &= run_verification<var_dec, init_val::nan, init_val::negative>(
-      queue, single_dim, fp_types);
-  passed &= run_verification<var_dec, init_val::negative, init_val::nan>(
-      queue, single_dim, fp_types);
+  passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::negative,
+                                    ctors::init_val::nan>(queue, single_dim,
+                                                          fp_types);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
