@@ -157,4 +157,4 @@ private:
   }
 };
 
-}
+} // namespace esimd_test::api::functional::ctors

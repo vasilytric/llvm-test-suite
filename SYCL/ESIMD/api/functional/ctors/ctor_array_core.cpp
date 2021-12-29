@@ -29,7 +29,6 @@
 
 #include "ctor_array.hpp"
 
-using namespace sycl::ext::intel::experimental::esimd;
 using namespace esimd_test::api::functional;
 
 int main(int, char **) {
