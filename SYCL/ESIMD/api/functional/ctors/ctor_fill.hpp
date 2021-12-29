@@ -218,14 +218,15 @@ public:
     });
     queue.wait_and_throw();
     bool passed = true;
+
+    // Verify the base value was passed as-is
     if (!are_bitwise_equal(result[0], base_value)) {
-      // Verify the base value was passed as-is
       passed = fail_test(0, result[0], base_value, data_type);
     }
 
-    DataT expected_value = base_value;
     // Verify the step value works as expected being passed to the fill
     // constructor.
+    DataT expected_value = base_value;
     for (size_t i = 1; i < result.size(); ++i) {
       if constexpr (BaseVal::value == init_val::nan ||
                     Step::value == init_val::nan) {
