@@ -18,7 +18,7 @@
 
 namespace esimd = sycl::ext::intel::experimental::esimd;
 
-namespace esimd_test::api::functional {
+namespace esimd_test::api::functional::ctors {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct initializer {
@@ -142,4 +142,4 @@ private:
   }
 };
 
-} // namespace esimd_test::api::functional
+} // namespace esimd_test::api::functional::ctors
