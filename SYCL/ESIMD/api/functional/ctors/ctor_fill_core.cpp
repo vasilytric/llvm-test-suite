@@ -16,8 +16,9 @@
 // RUN: false
 // XFAIL: *
 // TODO This test disabled due to simd<short, 32> vector filled with unexpected
-// values from 16th element. The test must be enabled when this problem will be
-// resolved.
+// values from 16th element. The issue was created
+// https://github.com/intel/llvm/issues/5245 and the test must be enabled when
+// it is resolved.
 //
 // Test on simd fill constructor.
 // This test uses different data types, dimensionality, base and step values and
