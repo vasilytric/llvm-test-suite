@@ -19,9 +19,9 @@
 // created (https://github.com/intel/llvm/issues/5077) and the test must be
 // enabled when it is resolved.
 //
-// Test on simd fill constructor.
-// This test uses extra fp data types, dimensionality, base and step values and
-// different simd constructor invocation contexts.
+// Test for simd fill constructor for extra fp types.
+// This test uses extra fp data types with different dimensionality, base and
+// step values and different simd constructor invocation contexts.
 // The test do the following actions:
 //  - construct simd with pre-defined base and step value
 //  - bitwise comparing expected and retrieved values

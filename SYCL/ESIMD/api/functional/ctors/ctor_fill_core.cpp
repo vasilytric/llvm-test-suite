@@ -20,7 +20,7 @@
 // https://github.com/intel/llvm/issues/5245 and the test must be enabled when
 // it is resolved.
 //
-// Test on simd fill constructor.
+// Test for simd fill constructor for core types.
 // This test uses different data types, dimensionality, base and step values and
 // different simd constructor invocation contexts.
 // The test do the following actions:
