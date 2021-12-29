@@ -1,36 +1,24 @@
-//==------- ctor_array.cpp  - DPC++ ESIMD on-device test -------------------==//
+//===-- ctor_array.hpp - Functions for tests on simd constructor from an array
+//      definition. -------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// REQUIRES: gpu, level_zero
-// XREQUIRES: gpu
-// TODO gpu and level_zero in REQUIRES due to only this platforms supported yet.
-// The current "REQUIRES" should be replaced with "gpu" only as mentioned in
-// "XREQUIRES".
-// UNSUPPORTED: cuda, hip
-// XRUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
-// XRUN: %GPU_RUN_PLACEHOLDER %t.out
-// RUN: false
-// XFAIL: *
-// TODO Unexpected runtime error "error: unsupported type for load/store" while
-// try to use simd::copy_from(), then simd::copy_to() with fixed-size array that
-// was defined on device side and the test must be enabled when it is resolved.
-//
-// Test for simd constructor from an array.
-// This test uses different data types, dimensionality and different simd
-// constructor invocation contexts.
-// The test does the following actions:
-//  - construct fixed-size array that filled with reference values
-//  - use std::move() to provide it to simd constructor
-//  - bitwise compare expected and retrieved values
+///
+/// \file
+/// This file provides functions for tests on simd constructor from an array.
+///
+//===----------------------------------------------------------------------===//
+
+#pragma once
 
 #include "common.hpp"
 
-using namespace sycl::ext::intel::experimental::esimd;
-using namespace esimd_test::api::functional;
+namespace esimd = sycl::ext::intel::experimental::esimd;
+
+namespace esimd_test::api::functional::ctors {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct initializer {
@@ -41,7 +29,7 @@ struct initializer {
     static_assert(
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
-    const auto simd_by_init = simd<DataT, NumElems>(std::move(ref_data));
+    const auto simd_by_init = esimd::simd<DataT, NumElems>(std::move(ref_data));
     simd_by_init.copy_to(out);
   }
 };
@@ -56,7 +44,7 @@ struct var_decl {
     static_assert(
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
-    simd<DataT, NumElems> simd_by_var_decl(std::move(ref_data));
+    const esimd::simd<DataT, NumElems> simd_by_var_decl(std::move(ref_data));
     simd_by_var_decl.copy_to(out);
   }
 };
@@ -71,8 +59,8 @@ struct rval_in_expr {
     static_assert(
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
-    simd<DataT, NumElems> simd_by_rval;
-    simd_by_rval = simd<DataT, NumElems>(std::move(ref_data));
+    esimd::simd<DataT, NumElems> simd_by_rval;
+    simd_by_rval = esimd::simd<DataT, NumElems>(std::move(ref_data));
     simd_by_rval.copy_to(out);
   }
 };
@@ -89,13 +77,13 @@ public:
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
     call_simd_by_const_ref<DataT, NumElems>(
-        simd<DataT, NumElems>(std::move(ref_data)), out);
+        esimd::simd<DataT, NumElems>(std::move(ref_data)), out);
   }
 
 private:
   template <typename DataT, int NumElems>
   static void
-  call_simd_by_const_ref(const simd<DataT, NumElems> &simd_by_const_ref,
+  call_simd_by_const_ref(const esimd::simd<DataT, NumElems> &simd_by_const_ref,
                          DataT *out) {
     simd_by_const_ref.copy_to(out);
   }
@@ -169,20 +157,4 @@ private:
   }
 };
 
-int main(int, char **) {
-  sycl::queue queue(esimd_test::ESIMDSelector{},
-                    esimd_test::createExceptionHandler());
-
-  bool passed = true;
-
-  const auto types = get_tested_types<tested_types::all>();
-  const auto dims = get_all_dimensions();
-
-  passed &= for_all_types_and_dims<run_test, initializer>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, var_decl>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, rval_in_expr>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, const_ref>(types, dims, queue);
-
-  std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
-  return passed ? 0 : 1;
 }
