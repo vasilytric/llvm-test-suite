@@ -234,7 +234,8 @@ public:
         if (!std::isnan(result[i])) {
           passed = false;
 
-          // TODO: Make ITestDescription architecture more flexible
+          // TODO: Make ITestDescription architecture more flexible.
+          // We are assuming that the NaN opcode may differ
           std::string log_msg = "Failed for simd<";
           log_msg += data_type + ", " + std::to_string(NumElems) + ">";
           log_msg += ", with context: " + TestCaseT::get_description();
