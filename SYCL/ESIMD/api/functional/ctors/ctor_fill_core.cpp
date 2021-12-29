@@ -19,7 +19,12 @@
 // values from 16th element. The test must be enabled when this problem will be
 // resolved.
 //
-// Test for esimd fill constructor for core types.
+// Test on simd fill constructor.
+// This test uses different data types, dimensionality, base and step values and
+// different simd constructor invocation contexts.
+// The test do the following actions:
+//  - construct simd with pre-defined base and step value
+//  - bitwise comparing expected and retrieved values
 
 #include "ctor_fill.hpp"
 
