@@ -43,7 +43,8 @@ int main(int, char **) {
 
   // Run for specific combinations of types, vector length, base and step values
   // and invocation contexts.
-  run_test<float, 8, double, initializer>{}(queue, "float", "double");
+  ctors::run_test<float, 8, double, ctors::initializer>{}(queue, "float",
+                                                          "double");
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

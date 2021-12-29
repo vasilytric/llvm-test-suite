@@ -174,7 +174,7 @@ template <typename DataT, int NumElems> std::vector<DataT> generate_ref_data() {
 // Provides std::vector with the reference data according to the obtained data
 // types and number of elements.
 template <typename SrcT, typename DstT, int NumElems>
-std::vector<SrcT> generate_converted_ref_data() {
+std::vector<SrcT> generate_ref_conv_data() {
   static_assert(std::is_integral_v<SrcT> ||
                     type_traits::is_sycl_floating_point_v<SrcT>,
                 "Invalid the first data type provided to the "
