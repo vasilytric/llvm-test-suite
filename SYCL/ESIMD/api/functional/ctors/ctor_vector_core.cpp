@@ -15,9 +15,8 @@
 // XRUN: %GPU_RUN_PLACEHOLDER %t.out
 // RUN: false
 // XFAIL: *
-// TODO Unexpected static_assert was retrieved while calling simd::copy_from()
-// function. The issue was created (https://github.com/intel/llvm/issues/5112)
-// and the test must be enabled when it is resolved.
+// TODO The tests freezed during runtime when using simd<char, 32>. The test
+// must be enabled when it is resolved.
 //
 // Test for simd constructor from vector.
 // This test uses different data types, dimensionality and different simd
