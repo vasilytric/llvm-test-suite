@@ -174,15 +174,15 @@ template <typename DataT, int NumElems> std::vector<DataT> generate_ref_data() {
 // Provides std::vector with the reference data according to the obtained data
 // types and number of elements.
 template <typename SrcT, typename DstT, int NumElems>
-std::vector<SrcT> generate_converted_ref_data() {
+std::vector<SrcT> generate_ref_conv_data() {
   static_assert(std::is_integral_v<SrcT> ||
                     type_traits::is_sycl_floating_point_v<SrcT>,
                 "Invalid the first data type provided to the "
-                "generate_converted_ref_data function as source type.");
+                "generate_ref_conv_data function as source type.");
   static_assert(std::is_integral_v<DstT> ||
                     type_traits::is_sycl_floating_point_v<DstT>,
                 "Invalid the second data type provided to the "
-                "generate_converted_ref_data function as destination type.");
+                "generate_ref_conv_data function as destination type.");
 
   static const SrcT min =
       std::max(value<SrcT>::lowest(), static_cast<SrcT>(value<DstT>::lowest()));
