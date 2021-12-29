@@ -28,7 +28,6 @@
 
 #include "ctor_vector.hpp"
 
-using namespace sycl::ext::intel::experimental::esimd;
 using namespace esimd_test::api::functional;
 
 int main(int, char **) {
