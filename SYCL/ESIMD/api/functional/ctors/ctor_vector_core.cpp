@@ -11,7 +11,7 @@
 // The current "REQUIRES" should be replaced with "gpu" only as mentioned in
 // "XREQUIRES".
 // UNSUPPORTED: cuda, hip
-// XRUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
+// RUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
 // XRUN: %GPU_RUN_PLACEHOLDER %t.out
 // RUN: false
 // XFAIL: *
