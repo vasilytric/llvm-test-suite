@@ -164,14 +164,10 @@ int main(int, char **) {
 
   // Run for specific combinations of types, vector length and invocation
   // contexts.
-  passed &= for_all_types_and_dims<run_test, initializer>(
-      types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, var_decl>(
-      types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, rval_in_expr>(
-      types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, const_ref>(
-      types, dims, queue);
+  passed &= for_all_types_and_dims<run_test, initializer>(types, dims, queue);
+  passed &= for_all_types_and_dims<run_test, var_decl>(types, dims, queue);
+  passed &= for_all_types_and_dims<run_test, rval_in_expr>(types, dims, queue);
+  passed &= for_all_types_and_dims<run_test, const_ref>(types, dims, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
