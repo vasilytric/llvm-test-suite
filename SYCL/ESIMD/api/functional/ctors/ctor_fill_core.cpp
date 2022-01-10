@@ -91,6 +91,9 @@ int main(int, char **) {
                                                                char_int_types);
 #ifdef SIMD_RUN_TEST_WITH_VECTOR_LEN_32
   const auto all_dims = values_pack<1, 8, 16, 32>();
+#else
+  const auto all_dims = values_pack<1, 8, 16>();
+#endif
   const auto all_types = get_tested_types<tested_types::all>();
   passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::min,
                                     ctors::init_val::zero>(queue, all_dims,
@@ -110,7 +113,7 @@ int main(int, char **) {
   passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::max_half,
                                     ctors::init_val::negative>(queue, all_dims,
                                                                all_types);
-#endif
+
   const auto single_dim = values_pack<8>();
   const auto uint_types = get_tested_types<tested_types::uint>();
   passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::min,
