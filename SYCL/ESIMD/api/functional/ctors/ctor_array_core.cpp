@@ -27,7 +27,7 @@
 //  - use std::move() to provide it to simd constructor
 //  - bitwise compare expected and retrieved values
 
-#include "ctor_array.hpp"
+#include "common.hpp"
 
 using namespace esimd_test::api::functional;
 using namespace sycl::ext::intel::experimental::esimd;
@@ -41,7 +41,7 @@ struct initializer {
     static_assert(
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
-    const auto simd_by_init = esimd::simd<DataT, NumElems>(std::move(ref_data));
+    const auto simd_by_init = simd<DataT, NumElems>(std::move(ref_data));
     simd_by_init.copy_to(out);
   }
 };
@@ -56,7 +56,7 @@ struct var_decl {
     static_assert(
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
-    const esimd::simd<DataT, NumElems> simd_by_var_decl(std::move(ref_data));
+    const simd<DataT, NumElems> simd_by_var_decl(std::move(ref_data));
     simd_by_var_decl.copy_to(out);
   }
 };
@@ -71,8 +71,8 @@ struct rval_in_expr {
     static_assert(
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
-    esimd::simd<DataT, NumElems> simd_by_rval;
-    simd_by_rval = esimd::simd<DataT, NumElems>(std::move(ref_data));
+    simd<DataT, NumElems> simd_by_rval;
+    simd_by_rval = simd<DataT, NumElems>(std::move(ref_data));
     simd_by_rval.copy_to(out);
   }
 };
@@ -89,13 +89,13 @@ public:
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
     call_simd_by_const_ref<DataT, NumElems>(
-        esimd::simd<DataT, NumElems>(std::move(ref_data)), out);
+        simd<DataT, NumElems>(std::move(ref_data)), out);
   }
 
 private:
   template <typename DataT, int NumElems>
   static void
-  call_simd_by_const_ref(const esimd::simd<DataT, NumElems> &simd_by_const_ref,
+  call_simd_by_const_ref(const simd<DataT, NumElems> &simd_by_const_ref,
                          DataT *out) {
     simd_by_const_ref.copy_to(out);
   }
@@ -180,13 +180,13 @@ int main(int, char **) {
 
   // Run for specific combinations of types, vector length, and invocation
   // contexts.
-  passed &= for_all_types_and_dims<ctors::run_test, ctors::initializer>(
+  passed &= for_all_types_and_dims<run_test, initializer>(
       types, dims, queue);
-  passed &= for_all_types_and_dims<ctors::run_test, ctors::var_decl>(
+  passed &= for_all_types_and_dims<run_test, var_decl>(
       types, dims, queue);
-  passed &= for_all_types_and_dims<ctors::run_test, ctors::rval_in_expr>(
+  passed &= for_all_types_and_dims<run_test, rval_in_expr>(
       types, dims, queue);
-  passed &= for_all_types_and_dims<ctors::run_test, ctors::const_ref>(
+  passed &= for_all_types_and_dims<run_test, const_ref>(
       types, dims, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
