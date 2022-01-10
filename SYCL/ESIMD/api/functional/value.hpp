@@ -116,6 +116,8 @@ template <typename DataT> struct value {
   static DataT ulp(DataT base_val, DataT direction) {
     if constexpr (std::is_same_v<DataT, sycl::half>) {
       return static_cast<sycl::half>(
+          // Multiplier is set according to the difference in precision between
+          // fp16 and fp32 types
           (sycl::nextafter(base_val, direction) - base_val) * 8192);
     } else {
       return std::nextafter(base_val, direction) - base_val;
