@@ -11,12 +11,12 @@
 // The current "REQUIRES" should be replaced with "gpu" only as mentioned in
 // "XREQUIRES".
 // UNSUPPORTED: cuda, hip
-// XRUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
-// XRUN: %GPU_RUN_PLACEHOLDER %t.out
-// RUN: false
-// XFAIL: *
+// RUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
+// RUN: %GPU_RUN_PLACEHOLDER %t.out
+//
 // TODO simd<float, 32> fills with unexpected values while base value is denorm
-// and step is ulp. The test must be enabled when this problem will be resolved.
+// and step is ulp. The SIMD_RUN_TEST_WITH_VECTOR_LEN_32 macros must be enabled
+// when it is resolved.
 //
 // The test verifies that simd fill constructor has no precision differences.
 // The test do the following actions:
@@ -38,13 +38,15 @@ int main(int, char **) {
   const auto fp_types = get_tested_types<tested_types::fp>();
   const auto single_dim = values_pack<8>();
 
-  // Run for specific combinations of types, base and step values and vector
-  // length.
-  // The first init_val value it's a base value and the second init_val value
-  // it's a step value.
+// Run for specific combinations of types, base and step values and vector
+// length.
+// The first init_val value it's a base value and the second init_val value
+// it's a step value.
+#ifdef SIMD_RUN_TEST_WITH_DENORM_INIT_VAL_AND_ULP_STEP
   passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::denorm,
                                     ctors::init_val::ulp>(queue, single_dim,
                                                           fp_types);
+#endif
   passed &= ctors::run_verification<ctors::var_dec, ctors::init_val::inexact,
                                     ctors::init_val::ulp>(queue, single_dim,
                                                           fp_types);
