@@ -41,7 +41,7 @@ struct initializer {
   static std::string get_description() { return "initializer"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(DataT(&&ref_data)[NumElems], DataT *const out) {
+  static void call_simd_ctor(DataT (&&ref_data)[NumElems], DataT *const out) {
     static_assert(
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
@@ -56,7 +56,7 @@ struct var_decl {
   static std::string get_description() { return "variable declaration"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(DataT(&&ref_data)[NumElems], DataT *const out) {
+  static void call_simd_ctor(DataT (&&ref_data)[NumElems], DataT *const out) {
     static_assert(
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
@@ -71,7 +71,7 @@ struct rval_in_expr {
   static std::string get_description() { return "rvalue in an expression"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(DataT(&&ref_data)[NumElems], DataT *const out) {
+  static void call_simd_ctor(DataT (&&ref_data)[NumElems], DataT *const out) {
     static_assert(
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
@@ -88,7 +88,7 @@ public:
   static std::string get_description() { return "const reference"; }
 
   template <typename DataT, int NumElems>
-  static void call_simd_ctor(DataT(&&ref_data)[NumElems], DataT *const out) {
+  static void call_simd_ctor(DataT (&&ref_data)[NumElems], DataT *const out) {
     static_assert(
         type_traits::is_nonconst_rvalue_reference_v<decltype(ref_data)>,
         "Provided input data is not nonconst rvalue reference");
