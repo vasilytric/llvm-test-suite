@@ -161,6 +161,15 @@ int main(int, char **) {
   sycl::queue queue(esimd_test::ESIMDSelector{},
                     esimd_test::createExceptionHandler());
 
+  sycl::device device = queue.get_device();
+  // verify aspect::fp16 due to using sycl::half data type
+  // verify aspect::fp64 due to using double data type
+  if (!device.is_host() && !device.has(sycl::aspect::fp16) &&
+      !device.has(sycl::aspect::fp64)) {
+    std::cout << "Test skipped\n";
+    return 0;
+  }
+
   bool passed = true;
 
 #ifdef SIMD_RUN_TEST_WITH_CHAR_TYPES
