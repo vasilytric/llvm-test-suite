@@ -61,16 +61,17 @@ sycl::half half_from_bytes(unsigned char hi, unsigned char lo) {
 
 // Constructs std::vector with from provided vectors.
 template <typename DataT, int NumElems>
-std::vector<DataT> construct_ref_data(double step,
-                                      std::vector<DataT> first_vector,
-                                      std::vector<DataT> second_vector = {}) {
+std::vector<DataT>
+construct_ref_data(double step = 0.75, std::vector<DataT> &&essential_values,
+                   const std::vector<DataT> &extra_values = {}) {
   std::vector<DataT> ref_data{};
 
-  ref_data.reserve((NumElems > 1) ? NumElems : first_vector.size());
+  ref_data.reserve((NumElems > 1) ? NumElems : essential_values.size());
 
-  ref_data.insert(ref_data.end(), first_vector.begin(), first_vector.end());
+  ref_data.insert(ref_data.end(), essential_values.begin(),
+                  essential_values.end());
   if constexpr (NumElems != 1) {
-    ref_data.insert(ref_data.end(), second_vector.begin(), second_vector.end());
+    ref_data.insert(ref_data.end(), extra_values.begin(), extra_values.end());
 
     for (size_t i = ref_data.size(); i < NumElems; ++i) {
       ref_data.push_back(i + step);
@@ -107,6 +108,8 @@ template <typename DataT> struct value {
   }
 
   static DataT denorm_min() {
+    static_assert(type_traits::is_sycl_floating_point_v<DataT>,
+                  "Only floating point type can be passed into this function.");
     if constexpr (std::is_same_v<DataT, sycl::half>) {
       return details::half_from_bytes(0b00000000u, 0b00000001u);
     } else {
@@ -150,7 +153,7 @@ template <typename DataT, int NumElems> std::vector<DataT> generate_ref_data() {
   static const DataT min_plus_one = min + 1;
   static const DataT max_minus_one = max - 1;
 
-  std::vector<DataT> ref_data{};
+  std::vector<DataT> ref_data;
 
   if constexpr (type_traits::is_sycl_floating_point_v<DataT>) {
     static const DataT nan = value<DataT>::nan();
@@ -159,73 +162,14 @@ template <typename DataT, int NumElems> std::vector<DataT> generate_ref_data() {
     // We are using the `double` literals to avoid precision loss for case of
     // the `double` DataT on unexact values like 0.1
     ref_data = details::construct_ref_data<DataT, NumElems>(
-        0.25, {-inf, nan, min, max, -0.0, 0.1}, {-0.1, +0.0});
+        {-inf, nan, min, max, -0.0, 0.1}, {-0.1, +0.0});
   } else if constexpr (std::is_signed_v<DataT>) {
     ref_data = details::construct_ref_data<DataT, NumElems>(
-        0, {min, min_half, max, max_half, 0},
-        {min_plus_one, max_minus_one, -1});
+        {min, min_half, max, max_half, 0}, {min_plus_one, max_minus_one, -1});
   } else {
-    ref_data = details::construct_ref_data<DataT, NumElems>(
-        0, {max, max_half, 0}, {max_minus_one});
+    ref_data = details::construct_ref_data<DataT, NumElems>({max, max_half, 0},
+                                                            {max_minus_one});
   }
-  return ref_data;
-}
-
-// Provides std::vector with the reference data according to the obtained data
-// types and number of elements.
-template <typename SrcT, typename DstT, int NumElems>
-std::vector<SrcT> generate_ref_conv_data() {
-  static_assert(std::is_integral_v<SrcT> ||
-                    type_traits::is_sycl_floating_point_v<SrcT>,
-                "Invalid the first data type provided to the "
-                "generate_ref_conv_data function as source type.");
-  static_assert(std::is_integral_v<DstT> ||
-                    type_traits::is_sycl_floating_point_v<DstT>,
-                "Invalid the second data type provided to the "
-                "generate_ref_conv_data function as destination type.");
-
-  static const SrcT min =
-      std::max(value<SrcT>::lowest(), static_cast<SrcT>(value<DstT>::lowest()));
-  static const SrcT min_half = min / 2;
-  static const SrcT max =
-      std::min(value<SrcT>::max(), static_cast<SrcT>(value<DstT>::max()));
-  static const SrcT max_half = max / 2;
-  static const SrcT nan = value<SrcT>::nan();
-  static const SrcT inf = value<SrcT>::inf();
-  static const SrcT denorm = std::max(
-      value<SrcT>::denorm_min(), static_cast<SrcT>(value<DstT>::denorm_min()));
-  static const SrcT positive = static_cast<SrcT>(126.75);
-
-  std::vector<SrcT> ref_data{};
-
-  if constexpr (type_traits::is_sycl_floating_point_v<SrcT> &&
-                type_traits::is_sycl_floating_point_v<DstT>) {
-    ref_data = details::construct_ref_data<SrcT, NumElems>(
-        0.25, {min, max, -0.0, +0.0, 0.1, denorm, nan, -inf});
-  } else if constexpr (type_traits::is_sycl_floating_point_v<SrcT> &&
-                       std::is_unsigned_v<DstT>) {
-    ref_data = details::construct_ref_data<SrcT, NumElems>(
-        0.75, {-0.0, max, max_half, -max_half});
-  } else if constexpr (type_traits::is_sycl_floating_point_v<SrcT> &&
-                       std::is_signed_v<DstT>) {
-    ref_data = details::construct_ref_data<SrcT, NumElems>(
-        0.75, {-0.0, max, max_half, min, min_half});
-  } else if constexpr (std::is_signed_v<SrcT> && std::is_signed_v<DstT>) {
-    ref_data = details::construct_ref_data<SrcT, NumElems>(
-        0, {min, min_half, 0, max_half, max});
-  } else if constexpr (std::is_signed_v<SrcT> && std::is_unsigned_v<DstT>) {
-    static const SrcT src_min = value<SrcT>::lowest();
-    static const SrcT src_min_half = src_min / 2;
-
-    ref_data = details::construct_ref_data<SrcT, NumElems>(
-        0, {src_min, src_min_half, 0, max_half, max});
-  } else if constexpr (std::is_unsigned_v<SrcT>) {
-    ref_data =
-        details::construct_ref_data<SrcT, NumElems>(0, {0, max_half, max});
-  } else {
-    static_assert(!std::is_same_v<SrcT, SrcT>, "Unexpected types combination");
-  }
-
   return ref_data;
 }
 
