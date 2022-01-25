@@ -16,7 +16,7 @@
 //
 // Test for esimd copy constructor.
 
-#include "common.hpp"
+#include "../common.hpp"
 
 using namespace sycl::ext::intel::experimental::esimd;
 using namespace esimd_test::api::functional;
@@ -125,7 +125,7 @@ private:
       const DataT *const ref = shared_ref_data.data();
       DataT *const out = result.data();
 
-      cgh.single_task<ctors::Kernel<DataT, NumElems, TestCaseT>>(
+      cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
           [=]() SYCL_ESIMD_KERNEL {
             TestCaseT::template call_simd_ctor<DataT, NumElems>(ref, out);
           });
@@ -136,9 +136,8 @@ private:
       if (!are_bitwise_equal(ref_data[i], result[i])) {
         passed = false;
 
-        const auto description =
-            ctors::TestDescription<DataT, NumElems, TestCaseT>(
-                i, result[i], ref_data[i], data_type);
+        const auto description = TestDescription<DataT, NumElems, TestCaseT>(
+            i, result[i], ref_data[i], data_type);
         log::fail(description);
       }
     }

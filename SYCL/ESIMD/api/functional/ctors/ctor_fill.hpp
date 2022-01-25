@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "common.hpp"
+#include "../common.hpp"
 // For std::isnan
 #include <cmath>
 

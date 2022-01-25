@@ -17,8 +17,8 @@
 // The test proxy is used to verify the move assignment was called actually.
 #define __ESIMD_ENABLE_TEST_PROXY
 
+#include "../common.hpp"
 #include "../shared_element.hpp"
-#include "common.hpp"
 
 namespace esimd_test::api::functional::ctors {
 
@@ -64,7 +64,7 @@ private:
       DataT *const out = result.data();
       const auto was_moved_storage = was_moved.data();
 
-      cgh.single_task<ctors::Kernel<DataT, NumElems, TestCaseT>>(
+      cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
           [=]() SYCL_ESIMD_KERNEL {
             *was_moved_storage =
                 TestCaseT::template call_simd_ctor<DataT, NumElems>(ref, out);
@@ -76,9 +76,8 @@ private:
       if (!are_bitwise_equal(ref_data[i], result[i])) {
         passed = false;
 
-        const auto description =
-            ctors::TestDescription<DataT, NumElems, TestCaseT>(
-                i, result[i], ref_data[i], data_type);
+        const auto description = TestDescription<DataT, NumElems, TestCaseT>(
+            i, result[i], ref_data[i], data_type);
         log::fail(description);
       }
     }

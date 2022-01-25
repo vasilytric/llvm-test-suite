@@ -20,7 +20,7 @@
 // created (https://github.com/intel/llvm/issues/5077) and the TEST_HALF macros
 // must be enabled when it is resolved.
 
-#include "common.hpp"
+#include "../common.hpp"
 
 using namespace sycl::ext::intel::experimental::esimd;
 using namespace esimd_test::api::functional;
@@ -90,7 +90,7 @@ template <typename DataT, int NumElems, typename TestCaseT> struct run_test {
 
     queue.submit([&](sycl::handler &cgh) {
       DataT *const out = result.data();
-      cgh.single_task<ctors::Kernel<DataT, NumElems, TestCaseT>>(
+      cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
           [=]() SYCL_ESIMD_KERNEL {
             TestCaseT::template call_simd_ctor<DataT, NumElems>(out);
           });
@@ -100,9 +100,8 @@ template <typename DataT, int NumElems, typename TestCaseT> struct run_test {
       if (result[i] != default_val) {
         passed = false;
 
-        const auto description =
-            ctors::TestDescription<DataT, NumElems, TestCaseT>(
-                i, result[i], default_val, data_type);
+        const auto description = TestDescription<DataT, NumElems, TestCaseT>(
+            i, result[i], default_val, data_type);
         log::fail(description);
       }
     }

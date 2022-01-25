@@ -30,7 +30,7 @@
 // The test proxy is used to verify the move constructor was called actually.
 #define __ESIMD_ENABLE_TEST_PROXY
 
-#include "common.hpp"
+#include "../common.hpp"
 #include <algorithm>
 #include <cassert>
 
@@ -98,7 +98,7 @@ public:
 // Runs a TestCaseT, specific for each C++ context, for a simd<DataT,NumElems>
 // instance
 template <typename DataT, int NumElems, typename TestCaseT> class run_test {
-  using KernelName = ctors::Kernel<DataT, NumElems, TestCaseT>;
+  using KernelName = Kernel<DataT, NumElems, TestCaseT>;
 
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
@@ -184,7 +184,7 @@ public:
         if (!are_bitwise_equal(retrieved, expected)) {
           passed = false;
 
-          log::fail(ctors::TestDescription<DataT, NumElems, TestCaseT>(
+          log::fail(TestDescription<DataT, NumElems, TestCaseT>(
               i, retrieved, expected, data_type));
         }
       }
