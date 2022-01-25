@@ -8,13 +8,13 @@
 //===----------------------------------------------------------------------===//
 ///
 /// \file
-/// This file provides functios for tests on simd assignment operators.
+/// This file provides functions for tests on simd assignment operators.
 ///
 //===----------------------------------------------------------------------===//
 
 #pragma once
 
-// The test proxy is used to verify the move constructor was called actually.
+// The test proxy is used to verify the move assignment was called actually.
 #define __ESIMD_ENABLE_TEST_PROXY
 
 #include "../shared_element.hpp"
@@ -24,9 +24,7 @@ namespace esimd_test::api::functional::ctors {
 
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
-template <typename DataT, int NumElems, typename TestCaseT,
-          typename ShouldMoveCtorBeCalled>
-class run_test {
+template <typename DataT, int NumElems, typename TestCaseT> class run_test {
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
     bool passed = true;
@@ -59,7 +57,7 @@ private:
     shared_vector<DataT> shared_ref_data(ref_data.begin(), ref_data.end(),
                                          allocator);
 
-    shared_elements<DataT> was_moved(queue);
+    shared_element<DataT> was_moved(queue);
 
     queue.submit([&](sycl::handler &cgh) {
       const DataT *const ref = shared_ref_data.data();
@@ -85,9 +83,10 @@ private:
       }
     }
 
-    if (was_moved[0] != ShouldMoveCtorBeCalled::value) {
+    if (!was_moved.value()) {
       passed = false;
-      log::note("Test failed due to move assignment operator hasn't called.");
+      log::note("Test failed due to move assignment operator hasn't called for "
+                "simd<" + data_type + ", " + std::to_string(NumElems) + ">.");
     }
 
     return passed;

@@ -21,23 +21,25 @@
 
 namespace esimd_test::api::functional {
 
-template <typename T> class shared_elements {
+template <typename T> class shared_element {
   std::unique_ptr<T, std::function<void(T *)>> m_allocated_data;
 
 public:
-  shared_elements(sycl::queue &queue, size_t num_elements = 1) {
+  shared_element(sycl::queue &queue) {
     const auto &device{queue.get_device()};
     const auto &context{queue.get_context()};
 
     auto deleter = [=](T *ptr) { sycl::free(ptr, context); };
 
     m_allocated_data = std::unique_ptr<T, decltype(deleter)>(
-        sycl::malloc_shared<T>(num_elements, device, context), deleter);
+        sycl::malloc_shared<T>(1, device, context), deleter);
   }
 
   T *data() { return m_allocated_data.get(); }
 
-  T operator[](size_t i) { return m_allocated_data.get()[i]; }
+  const T *data() const { return m_allocated_data.get(); }
+
+  T value() { return *m_allocated_data.get(); }
 };
 
 } // namespace esimd_test::api::functional

@@ -38,7 +38,7 @@ struct move_assignment {
     simd<DataT, NumElems> simd_obj;
     simd_obj = std::move(source_simd);
     simd_obj.copy_to(out);
-    return simd_obj.get_test_proxy().was_move_destination();
+    return simd_obj.get_test_proxy().was_move_destination() == true;
   }
 };
 
@@ -48,14 +48,11 @@ int main(int, char **) {
 
   bool passed = true;
 
-  typedef std::integral_constant<bool, true> expected_call_move_ctor_value;
-
   const auto types = get_tested_types<tested_types::all>();
   const auto dims = get_all_dimensions();
 
-  passed &=
-      for_all_types_and_dims<ctors::run_test, move_assignment,
-                             expected_call_move_ctor_value>(types, dims, queue);
+  passed &= for_all_types_and_dims<ctors::run_test, move_assignment>(
+      types, dims, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

@@ -14,14 +14,14 @@
 
 #pragma once
 
+#include <sycl/ext/intel/experimental/esimd.hpp>
+#include <sycl/sycl.hpp>
+
 #include "../../esimd_test_utils.hpp"
 #include "logger.hpp"
 #include "type_coverage.hpp"
 #include "type_traits.hpp"
 #include "value.hpp"
-
-#include <sycl/ext/intel/experimental/esimd.hpp>
-#include <sycl/sycl.hpp>
 
 #include <vector>
 
