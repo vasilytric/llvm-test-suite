@@ -17,6 +17,7 @@
 // The test proxy is used to verify the move constructor was called actually.
 #define __ESIMD_ENABLE_TEST_PROXY
 
+#include "../shared_element.hpp"
 #include "common.hpp"
 
 namespace esimd_test::api::functional::ctors {
@@ -58,7 +59,7 @@ private:
     shared_vector<DataT> shared_ref_data(ref_data.begin(), ref_data.end(),
                                          allocator);
 
-    shared_vector<int> was_moved(1, shared_allocator<int>(queue));
+    shared_elements<DataT> was_moved(queue);
 
     queue.submit([&](sycl::handler &cgh) {
       const DataT *const ref = shared_ref_data.data();
@@ -84,7 +85,7 @@ private:
       }
     }
 
-    if (was_moved.at(0) != ShouldMoveCtorBeCalled::value) {
+    if (was_moved[0] != ShouldMoveCtorBeCalled::value) {
       passed = false;
       log::note("Test failed due to move assignment operator hasn't called.");
     }
