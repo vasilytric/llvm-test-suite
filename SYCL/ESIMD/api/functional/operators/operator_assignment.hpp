@@ -57,7 +57,7 @@ private:
     shared_vector<DataT> shared_ref_data(ref_data.begin(), ref_data.end(),
                                          allocator);
 
-    shared_element<DataT> was_moved(queue);
+    shared_element<bool> was_moved(queue);
 
     queue.submit([&](sycl::handler &cgh) {
       const DataT *const ref = shared_ref_data.data();
