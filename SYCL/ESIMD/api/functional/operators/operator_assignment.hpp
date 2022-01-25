@@ -85,7 +85,8 @@ private:
     if (!was_moved.value()) {
       passed = false;
       log::note("Test failed due to move assignment operator hasn't called for "
-                "simd<" + data_type + ", " + std::to_string(NumElems) + ">.");
+                "simd<" +
+                data_type + ", " + std::to_string(NumElems) + ">.");
     }
 
     return passed;
