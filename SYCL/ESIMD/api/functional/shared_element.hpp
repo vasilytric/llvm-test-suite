@@ -25,7 +25,7 @@ template <typename T> class shared_element {
   std::unique_ptr<T, std::function<void(T *)>> m_allocated_data;
 
 public:
-  shared_element(sycl::queue &queue) {
+  shared_element(sycl::queue &queue, T initial_value) {
     const auto &device{queue.get_device()};
     const auto &context{queue.get_context()};
 
@@ -33,6 +33,9 @@ public:
 
     m_allocated_data = std::unique_ptr<T, decltype(deleter)>(
         sycl::malloc_shared<T>(1, device, context), deleter);
+
+    assert(m_allocated_data && "USM memory allocation failed");
+    *m_allocated_data = initial_value;
   }
 
   T *data() { return m_allocated_data.get(); }
@@ -40,6 +43,8 @@ public:
   const T *data() const { return m_allocated_data.get(); }
 
   T value() { return *m_allocated_data.get(); }
+
+  T value() const { return *m_allocated_data.get(); }
 };
 
 } // namespace esimd_test::api::functional

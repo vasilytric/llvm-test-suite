@@ -27,12 +27,12 @@
 using namespace sycl::ext::intel::experimental::esimd;
 using namespace esimd_test::api::functional;
 
-// Descriptor class for the case of calling constructor in initializer context.
+// Descriptor class for the case of calling move assignment operator.
 struct move_assignment {
   static std::string get_description() { return "move assignment operator"; }
 
   template <typename DataT, int NumElems>
-  static bool call_simd_ctor(const DataT *const ref_data, DataT *const out) {
+  static bool run(const DataT *const ref_data, DataT *const out) {
     simd<DataT, NumElems> source_simd;
     source_simd.copy_from(ref_data);
     simd<DataT, NumElems> simd_obj;
@@ -51,7 +51,7 @@ int main(int, char **) {
   const auto types = get_tested_types<tested_types::all>();
   const auto dims = get_all_dimensions();
 
-  passed &= for_all_types_and_dims<ctors::run_test, move_assignment>(
+  passed &= for_all_types_and_dims<operators::run_test, move_assignment>(
       types, dims, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");

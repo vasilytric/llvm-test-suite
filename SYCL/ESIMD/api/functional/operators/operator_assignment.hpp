@@ -20,7 +20,7 @@
 #include "../common.hpp"
 #include "../shared_element.hpp"
 
-namespace esimd_test::api::functional::ctors {
+namespace esimd_test::api::functional::operators {
 
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
@@ -57,17 +57,17 @@ private:
     shared_vector<DataT> shared_ref_data(ref_data.begin(), ref_data.end(),
                                          allocator);
 
-    shared_element<bool> was_moved(queue);
+    shared_element<bool> is_correct_operator(queue, false);
 
     queue.submit([&](sycl::handler &cgh) {
       const DataT *const ref = shared_ref_data.data();
       DataT *const out = result.data();
-      const auto was_moved_storage = was_moved.data();
+      const auto is_correct_operator_storage = is_correct_operator.data();
 
       cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
           [=]() SYCL_ESIMD_KERNEL {
-            *was_moved_storage =
-                TestCaseT::template call_simd_ctor<DataT, NumElems>(ref, out);
+            *is_correct_operator_storage =
+                TestCaseT::template run<DataT, NumElems>(ref, out);
           });
     });
     queue.wait_and_throw();
@@ -82,15 +82,15 @@ private:
       }
     }
 
-    if (!was_moved.value()) {
+    if (!is_correct_operator.value()) {
       passed = false;
-      log::note("Test failed due to move assignment operator hasn't called for "
-                "simd<" +
-                data_type + ", " + std::to_string(NumElems) + ">.");
+      log::note("Test failed due to " + TestCaseT::get_description() +
+                " hasn't called for simd<" + data_type + ", " +
+                std::to_string(NumElems) + ">.");
     }
 
     return passed;
   }
 };
 
-} // namespace esimd_test::api::functional::ctors
+} // namespace esimd_test::api::functional::operators
