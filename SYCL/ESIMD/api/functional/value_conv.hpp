@@ -24,8 +24,8 @@ namespace esimd_test::api::functional {
 // All provided methods are save to use and protected from UB when call
 // static_cast<int>(unsigned int).
 template <typename SrcT, typename DstT> struct value_conv {
-  static SrcT lowest() {
-    if constexpr (!sts::is_unsigned_v<SrcT> && sts::is_unsigned_v<DstT>) {
+  static inline SrcT lowest() {
+    if constexpr (sts::is_signed_v<SrcT> && sts::is_unsigned_v<DstT>) {
       if constexpr (sizeof(SrcT) > sizeof(DstT)) {
         return static_cast<SrcT>(value<DstT>::lowest());
       } else {
@@ -37,7 +37,7 @@ template <typename SrcT, typename DstT> struct value_conv {
     }
   }
 
-  static SrcT max() {
+  static inline SrcT max() {
     if constexpr (!sts::is_unsigned_v<SrcT> && sts::is_unsigned_v<DstT>) {
       if constexpr (sizeof(SrcT) > sizeof(DstT)) {
         return static_cast<SrcT>(value<DstT>::max());
@@ -50,14 +50,16 @@ template <typename SrcT, typename DstT> struct value_conv {
     }
   }
 
-  static SrcT denorm_min() {
-    if constexpr (std::is_same_v<SrcT, sycl::half> ||
-                  std::is_same_v<DstT, sycl::half>) {
-      return value<SrcT>::denorm_min();
+  static inline SrcT denorm_min() {
+    if constexpr (!type_traits::is_sycl_floating_point_v<DataT>) {
+      // Return zero for any integral type the same way std::denorm_min does
+      return 0;
     } else if constexpr (sizeof(SrcT) > sizeof(DstT)) {
-      return static_cast<SrcT>(value<DstT>::max());
+      // Use the biggest value so it would not degenerate to zero during
+      // conversion from SrcT to DstT
+      return static_cast<SrcT>(value<DstT>::denorm_min());
     } else {
-      return value<SrcT>::max();
+      return value<SrcT>::denorm_min();
     }
   }
 };
@@ -87,26 +89,27 @@ std::vector<SrcT> generate_ref_conv_data() {
   if constexpr (type_traits::is_sycl_floating_point_v<SrcT> &&
                 type_traits::is_sycl_floating_point_v<DstT>) {
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        {min, max, -0.0, +0.0, 0.1, denorm, nan, -inf});
+        std::move({min, max, -0.0, +0.0, 0.1, denorm, nan, -inf}));
   } else if constexpr (type_traits::is_sycl_floating_point_v<SrcT> &&
                        std::is_unsigned_v<DstT>) {
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        {-0.0, max, max_half, -max_half});
+        std::move({-0.0, max, max_half, -max_half}));
   } else if constexpr (type_traits::is_sycl_floating_point_v<SrcT> &&
                        std::is_signed_v<DstT>) {
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        {-0.0, max, max_half, min, min_half});
+        std::move({-0.0, max, max_half, min, min_half}));
   } else if constexpr (std::is_signed_v<SrcT> && std::is_signed_v<DstT>) {
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        {min, min_half, 0, max_half, max});
+        std::move({min, min_half, 0, max_half, max}));
   } else if constexpr (std::is_signed_v<SrcT> && std::is_unsigned_v<DstT>) {
     static const SrcT src_min = value<SrcT>::lowest();
     static const SrcT src_min_half = src_min / 2;
 
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        {src_min, src_min_half, 0, max_half, max});
+        std::move({src_min, src_min_half, 0, max_half, max}));
   } else if constexpr (std::is_unsigned_v<SrcT>) {
-    ref_data = details::construct_ref_data<SrcT, NumElems>({0, max_half, max});
+    ref_data = details::construct_ref_data<SrcT, NumElems>(
+        std::move({0, max_half, max}));
   } else {
     static_assert(!std::is_same_v<SrcT, SrcT>, "Unexpected types combination");
   }

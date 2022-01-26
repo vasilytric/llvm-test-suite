@@ -62,19 +62,17 @@ sycl::half half_from_bytes(unsigned char hi, unsigned char lo) {
 // Constructs std::vector with from provided vectors.
 template <typename DataT, int NumElems>
 std::vector<DataT>
-construct_ref_data(double step = 0.75, std::vector<DataT> &&essential_values,
+construct_ref_data(std::vector<DataT> &&essential_values,
                    const std::vector<DataT> &extra_values = {}) {
-  std::vector<DataT> ref_data{};
+  std::vector<DataT> ref_data(std::move(essential_values));
 
   ref_data.reserve((NumElems > 1) ? NumElems : essential_values.size());
 
-  ref_data.insert(ref_data.end(), essential_values.begin(),
-                  essential_values.end());
   if constexpr (NumElems != 1) {
     ref_data.insert(ref_data.end(), extra_values.begin(), extra_values.end());
 
     for (size_t i = ref_data.size(); i < NumElems; ++i) {
-      ref_data.push_back(i + step);
+      ref_data.push_back(i + 0.75);
     }
   }
 
@@ -108,8 +106,8 @@ template <typename DataT> struct value {
   }
 
   static DataT denorm_min() {
-    static_assert(type_traits::is_sycl_floating_point_v<DataT>,
-                  "Only floating point type can be passed into this function.");
+    assert(type_traits::is_sycl_floating_point_v<DataT> &&
+           "Only floating point type can be passed into this function.");
     if constexpr (std::is_same_v<DataT, sycl::half>) {
       return details::half_from_bytes(0b00000000u, 0b00000001u);
     } else {
@@ -162,13 +160,14 @@ template <typename DataT, int NumElems> std::vector<DataT> generate_ref_data() {
     // We are using the `double` literals to avoid precision loss for case of
     // the `double` DataT on unexact values like 0.1
     ref_data = details::construct_ref_data<DataT, NumElems>(
-        {-inf, nan, min, max, -0.0, 0.1}, {-0.1, +0.0});
+        std::move({-inf, nan, min, max, -0.0, 0.1}), {-0.1, +0.0});
   } else if constexpr (std::is_signed_v<DataT>) {
     ref_data = details::construct_ref_data<DataT, NumElems>(
-        {min, min_half, max, max_half, 0}, {min_plus_one, max_minus_one, -1});
+        std::move({min, min_half, max, max_half, 0}),
+        {min_plus_one, max_minus_one, -1});
   } else {
-    ref_data = details::construct_ref_data<DataT, NumElems>({max, max_half, 0},
-                                                            {max_minus_one});
+    ref_data = details::construct_ref_data<DataT, NumElems>(
+        std::move({max, max_half, 0}), {max_minus_one});
   }
   return ref_data;
 }
