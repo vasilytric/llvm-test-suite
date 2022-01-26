@@ -24,32 +24,6 @@ namespace esimd_test::api::functional {
 // All provided methods are save to use and protected from UB when call
 // static_cast<int>(unsigned int).
 template <typename SrcT, typename DstT> struct value_conv {
-  static inline SrcT lowest() {
-    if constexpr (sts::is_signed_v<SrcT> && sts::is_unsigned_v<DstT>) {
-      if constexpr (sizeof(SrcT) > sizeof(DstT)) {
-        return static_cast<SrcT>(value<DstT>::lowest());
-      } else {
-        return value<SrcT>::lowest();
-      }
-    } else {
-      return std::max(value<SrcT>::lowest(),
-                      static_cast<SrcT>(value<DstT>::lowest()));
-    }
-  }
-
-  static inline SrcT max() {
-    if constexpr (!sts::is_unsigned_v<SrcT> && sts::is_unsigned_v<DstT>) {
-      if constexpr (sizeof(SrcT) > sizeof(DstT)) {
-        return static_cast<SrcT>(value<DstT>::max());
-      } else {
-        return value<SrcT>::max();
-      }
-    } else {
-      return std::min(value<SrcT>::max(),
-                      static_cast<SrcT>(value<DstT>::max()));
-    }
-  }
-
   static inline SrcT denorm_min() {
     if constexpr (!type_traits::is_sycl_floating_point_v<DataT>) {
       // Return zero for any integral type the same way std::denorm_min does
@@ -75,10 +49,8 @@ std::vector<SrcT> generate_ref_conv_data() {
                     type_traits::is_sycl_floating_point_v<DstT>,
                 "Invalid destination type.");
 
-  static const SrcT min = value_conv<SrcT>::lowest();
-  static const SrcT min_half = min / 2;
-  static const SrcT max = value_conv<SrcT>::max();
-  static const SrcT max_half = max / 2;
+  // TODO: Implement functions for obtain lowest and max values without UB
+  // cases.
   static const SrcT nan = value<SrcT>::nan();
   static const SrcT inf = value<SrcT>::inf();
   static const SrcT denorm = value_conv<SrcT, DstT>::denorm_min();
