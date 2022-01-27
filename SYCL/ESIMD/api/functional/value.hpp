@@ -175,14 +175,13 @@ template <typename DataT, int NumElems> std::vector<DataT> generate_ref_data() {
     // We are using the `double` literals to avoid precision loss for case of
     // the `double` DataT on unexact values like 0.1
     ref_data = details::construct_ref_data<DataT, NumElems>(
-        std::move({-inf, nan, min, max, -0.0, 0.1}), {-0.1, +0.0});
+        {-inf, nan, min, max, -0.0, 0.1}, {-0.1, +0.0});
   } else if constexpr (std::is_signed_v<DataT>) {
     ref_data = details::construct_ref_data<DataT, NumElems>(
-        std::move({min, min_half, max, max_half, 0}),
-        {min_plus_one, max_minus_one, -1});
+        {min, min_half, max, max_half, 0}, {min_plus_one, max_minus_one, -1});
   } else {
-    ref_data = details::construct_ref_data<DataT, NumElems>(
-        std::move({max, max_half, 0}), {max_minus_one});
+    ref_data = details::construct_ref_data<DataT, NumElems>({max, max_half, 0},
+                                                            {max_minus_one});
   }
   return ref_data;
 }

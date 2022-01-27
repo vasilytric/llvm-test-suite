@@ -61,27 +61,26 @@ std::vector<SrcT> generate_ref_conv_data() {
   if constexpr (type_traits::is_sycl_floating_point_v<SrcT> &&
                 type_traits::is_sycl_floating_point_v<DstT>) {
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        std::move({min, max, -0.0, +0.0, 0.1, denorm, nan, -inf}));
+        {min, max, -0.0, +0.0, 0.1, denorm, nan, -inf});
   } else if constexpr (type_traits::is_sycl_floating_point_v<SrcT> &&
                        std::is_unsigned_v<DstT>) {
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        std::move({-0.0, max, max_half, -max_half}));
+        {-0.0, max, max_half, -max_half});
   } else if constexpr (type_traits::is_sycl_floating_point_v<SrcT> &&
                        std::is_signed_v<DstT>) {
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        std::move({-0.0, max, max_half, min, min_half}));
+        {-0.0, max, max_half, min, min_half});
   } else if constexpr (std::is_signed_v<SrcT> && std::is_signed_v<DstT>) {
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        std::move({min, min_half, 0, max_half, max}));
+        {min, min_half, 0, max_half, max});
   } else if constexpr (std::is_signed_v<SrcT> && std::is_unsigned_v<DstT>) {
     static const SrcT src_min = value<SrcT>::lowest();
     static const SrcT src_min_half = src_min / 2;
 
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        std::move({src_min, src_min_half, 0, max_half, max}));
+        {src_min, src_min_half, 0, max_half, max});
   } else if constexpr (std::is_unsigned_v<SrcT>) {
-    ref_data = details::construct_ref_data<SrcT, NumElems>(
-        std::move({0, max_half, max}));
+    ref_data = details::construct_ref_data<SrcT, NumElems>({0, max_half, max});
   } else {
     static_assert(!std::is_same_v<SrcT, SrcT>, "Unexpected types combination");
   }
