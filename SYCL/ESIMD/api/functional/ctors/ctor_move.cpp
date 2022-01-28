@@ -21,12 +21,6 @@
 // source simd instance. It is expected for a new simd instance to store
 // bitwise same data as the one passed as the source simd constructor.
 
-// The following issues for simd<T,32> observed:
-// - freeze with T in {char, unsigned char, singned char};
-// - runtime failure with T in {short, unsigned short}.
-// TODO Remove once the freeze is fixed
-#define SKIP_VECTOR_LEN_32
-
 // The test proxy is used to verify the move constructor was called actually.
 #define __ESIMD_ENABLE_TEST_PROXY
 
@@ -97,8 +91,9 @@ public:
 // The core test functionality.
 // Runs a TestCaseT, specific for each C++ context, for a simd<DataT,NumElems>
 // instance
-template <typename DataT, int NumElems, typename TestCaseT> class run_test {
-  using KernelName = Kernel<DataT, NumElems, TestCaseT>;
+template <typename DataT, typename DimT, typename TestCaseT> class run_test {
+  static constexpr int NumElems = DimT::value;
+  using KernelName = ctors::Kernel<DataT, NumElems, TestCaseT>;
 
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
@@ -222,20 +217,15 @@ private:
 int main(int, char **) {
   bool passed = true;
   const auto types = get_tested_types<tested_types::all>();
-#ifdef SKIP_VECTOR_LEN_32
-  const auto dims = values_pack<1, 8, 16>();
-#else
   const auto dims = get_all_dimensions();
-#endif
+  const auto contexts = unnamed_type_pack<initializer, var_decl, rval_in_expr,
+                                          const_ref>::generate();
 
   sycl::queue queue(esimd_test::ESIMDSelector{},
                     esimd_test::createExceptionHandler());
 
   // Run for all combinations possible
-  passed &= for_all_types_and_dims<run_test, initializer>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, var_decl>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, rval_in_expr>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, const_ref>(types, dims, queue);
+  passed &= for_all_combinations<run_test>(types, dims, contexts, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

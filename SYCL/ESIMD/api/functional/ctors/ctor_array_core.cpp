@@ -13,15 +13,6 @@
 // UNSUPPORTED: cuda, hip
 // RUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
 // RUN: %GPU_RUN_PLACEHOLDER %t.out
-// TODO Unexpected runtime error "error: unsupported type for load/store" while
-// try to use simd::copy_from(), then simd::copy_to() with fixed-size array that
-// was defined on device side and the SIMD_RUN_TEST_WITH_VECTOR_LEN_1 macros
-// must be enabled when it is resolved.
-//
-// TODO This test disabled due to simd<short, 32> vector filled with unexpected
-// values from 16th element. The issue was created
-// https://github.com/intel/llvm/issues/5245 and and the
-// SIMD_RUN_TEST_WITH_VECTOR_LEN_32 macros must be enabled when it is resolved.
 //
 // Test for simd constructor from an array.
 // This test uses different data types, dimensionality and different simd
@@ -107,7 +98,9 @@ private:
 
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
-template <typename DataT, int NumElems, typename TestCaseT> class run_test {
+template <typename DataT, typename DimT, typename TestCaseT> class run_test {
+  static constexpr int NumElems = DimT::value;
+
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
 
@@ -179,23 +172,11 @@ int main(int, char **) {
   bool passed = true;
 
   const auto types = get_tested_types<tested_types::all>();
-#if defined(SIMD_RUN_TEST_WITH_VECTOR_LEN_1) &&                                \
-    defined(SIMD_RUN_TEST_WITH_VECTOR_LEN_32)
   const auto dims = get_all_dimensions();
-#elif SIMD_RUN_TEST_WITH_VECTOR_LEN_32
-  const auto dims = values_pack<8, 16, 32>();
-#elif SIMD_RUN_TEST_WITH_VECTOR_LEN_1
-  const auto dims = values_pack<1, 8, 16>();
-#else
-  const auto dims = values_pack<8, 16>();
-#endif
+  const auto contexts = unnamed_type_pack<initializer, var_decl, rval_in_expr,
+                                          const_ref>::generate();
 
-  // Run for specific combinations of types, vector length, and invocation
-  // contexts.
-  passed &= for_all_types_and_dims<run_test, initializer>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, var_decl>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, rval_in_expr>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, const_ref>(types, dims, queue);
+  passed &= for_all_combinations<run_test>(types, dims, contexts, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
