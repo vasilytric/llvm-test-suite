@@ -17,8 +17,8 @@
 // The test proxy is used to verify the move assignment was called actually.
 #define __ESIMD_ENABLE_TEST_PROXY
 
-#include "common.hpp"
 #include "../shared_element.hpp"
+#include "common.hpp"
 
 namespace esimd_test::api::functional::operators {
 
