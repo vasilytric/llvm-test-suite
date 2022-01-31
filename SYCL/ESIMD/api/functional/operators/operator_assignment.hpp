@@ -17,7 +17,7 @@
 // The test proxy is used to verify the move assignment was called actually.
 #define __ESIMD_ENABLE_TEST_PROXY
 
-#include "../common.hpp"
+#include "common.hpp"
 #include "../shared_element.hpp"
 
 namespace esimd_test::api::functional::operators {
@@ -76,7 +76,7 @@ private:
       if (!are_bitwise_equal(ref_data[i], result[i])) {
         passed = false;
 
-        const auto description = TestDescription<DataT, NumElems, TestCaseT>(
+        const auto description = TestDescription<DataT, NumElems>(
             i, result[i], ref_data[i], data_type);
         log::fail(description);
       }

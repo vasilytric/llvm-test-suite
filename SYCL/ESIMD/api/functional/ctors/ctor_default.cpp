@@ -20,7 +20,7 @@
 // created (https://github.com/intel/llvm/issues/5077) and the TEST_HALF macros
 // must be enabled when it is resolved.
 
-#include "../common.hpp"
+#include "common.hpp"
 
 using namespace sycl::ext::intel::experimental::esimd;
 using namespace esimd_test::api::functional;
@@ -102,8 +102,9 @@ template <typename DataT, typename DimT, typename TestCaseT> struct run_test {
       if (result[i] != default_val) {
         passed = false;
 
-        const auto description = TestDescription<DataT, NumElems, TestCaseT>(
-            i, result[i], default_val, data_type);
+        const auto description =
+            ctors::TestDescription<DataT, NumElems, TestCaseT>(
+                i, result[i], default_val, data_type);
         log::fail(description);
       }
     }

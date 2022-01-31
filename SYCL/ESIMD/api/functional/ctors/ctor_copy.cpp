@@ -16,7 +16,7 @@
 //
 // Test for esimd copy constructor.
 
-#include "../common.hpp"
+#include "common.hpp"
 
 using namespace sycl::ext::intel::experimental::esimd;
 using namespace esimd_test::api::functional;
@@ -138,8 +138,9 @@ private:
       if (!are_bitwise_equal(ref_data[i], result[i])) {
         passed = false;
 
-        const auto description = TestDescription<DataT, NumElems, TestCaseT>(
-            i, result[i], ref_data[i], data_type);
+        const auto description =
+            ctors::TestDescription<DataT, NumElems, TestCaseT>(
+                i, result[i], ref_data[i], data_type);
         log::fail(description);
       }
     }

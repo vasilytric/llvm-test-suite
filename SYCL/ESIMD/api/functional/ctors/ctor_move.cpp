@@ -24,7 +24,7 @@
 // The test proxy is used to verify the move constructor was called actually.
 #define __ESIMD_ENABLE_TEST_PROXY
 
-#include "../common.hpp"
+#include "common.hpp"
 #include <algorithm>
 #include <cassert>
 
@@ -179,7 +179,7 @@ public:
         if (!are_bitwise_equal(retrieved, expected)) {
           passed = false;
 
-          log::fail(TestDescription<DataT, NumElems, TestCaseT>(
+          log::fail(ctors::TestDescription<DataT, NumElems, TestCaseT>(
               i, retrieved, expected, data_type));
         }
       }
