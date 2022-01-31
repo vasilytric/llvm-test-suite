@@ -50,8 +50,10 @@ int main(int, char **) {
   const auto types = get_tested_types<tested_types::all>();
   const auto dims = get_all_dimensions();
 
-  passed &= for_all_types_and_dims<operators::run_test, copy_assignment>(
-      types, dims, queue);
+  const auto context = unnamed_type_pack<copy_assignment>::generate();
+
+  passed &=
+      for_all_combinations<operators::run_test>(types, dims, context, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
