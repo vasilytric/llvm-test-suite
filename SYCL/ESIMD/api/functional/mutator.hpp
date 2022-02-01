@@ -12,13 +12,13 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#pragma once
+
 #include "value.hpp"
 #include <sycl/sycl.hpp>
 
 #include <algorithm>
 #include <vector>
-
-#pragma once
 
 namespace esimd_test::api::functional {
 

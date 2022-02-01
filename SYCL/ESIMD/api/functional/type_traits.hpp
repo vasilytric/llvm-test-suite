@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <sycl/sycl.hpp>
+
 #include <type_traits>
 #include <utility>
 
