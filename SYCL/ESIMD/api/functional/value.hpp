@@ -59,7 +59,7 @@ sycl::half half_from_bytes(unsigned char hi, unsigned char lo) {
   return esimd_test::bit_cast<sycl::half>(out);
 }
 
-// Constructs std::vector with from provided vectors.
+// Constructs std::vector from provided vectors.
 template <typename DataT, int NumElems>
 std::vector<DataT>
 construct_ref_data(std::vector<DataT> &&essential_values,
@@ -109,6 +109,7 @@ template <typename DataT> struct value {
     assert(type_traits::is_sycl_floating_point_v<DataT> &&
            "Only floating point type can be passed into this function.");
     if constexpr (std::is_same_v<DataT, sycl::half>) {
+      // Represents 5.96046e-08 sycl::half value.
       return details::half_from_bytes(0b00000000u, 0b00000001u);
     } else {
       return std::numeric_limits<DataT>::denorm_min();

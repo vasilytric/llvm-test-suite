@@ -21,7 +21,7 @@ namespace esimd_test::api::functional {
 
 // Utility class to retrieve specific values for tests depending on the source
 // and destination data types. May be used to retrieve converted reference data.
-// All provided methods are save to use and protected from UB when call
+// All provided methods are safe to use and protected from UB when call
 // static_cast<int>(unsigned int).
 template <typename SrcT, typename DstT> struct value_conv {
   static inline SrcT denorm_min() {
