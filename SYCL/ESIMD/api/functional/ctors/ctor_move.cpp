@@ -93,7 +93,7 @@ public:
 // instance
 template <typename DataT, typename DimT, typename TestCaseT> class run_test {
   static constexpr int NumElems = DimT::value;
-  using KernelName = ctors::Kernel<DataT, NumElems, TestCaseT>;
+  using KernelName = Kernel<DataT, NumElems, TestCaseT>;
 
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {

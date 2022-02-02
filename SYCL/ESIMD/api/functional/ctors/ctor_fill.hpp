@@ -98,7 +98,7 @@ enum class init_val {
   ulp_half
 };
 
-// Dummy kernel for submitting some code into device side.
+// Class used as a kernel ID.
 template <typename DataT, int NumElems, typename T, init_val BaseVal,
           init_val StepVal>
 struct kernel_for_fill;
