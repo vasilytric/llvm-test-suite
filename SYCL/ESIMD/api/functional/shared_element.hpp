@@ -15,12 +15,16 @@
 
 #pragma once
 
+#include <sycl/sycl.hpp>
+
 #include <functional>
 #include <memory>
-#include <sycl/sycl.hpp>
 
 namespace esimd_test::api::functional {
 
+// Provides APIs to interact with USM pointer without memory leaks for a single
+// variable. Might be useful to provide access to a single boolean flag to store
+// success, for example.
 template <typename T> class shared_element {
   std::unique_ptr<T, std::function<void(T *)>> m_allocated_data;
 
