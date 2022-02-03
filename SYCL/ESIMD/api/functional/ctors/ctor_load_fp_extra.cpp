@@ -1,4 +1,4 @@
-//==------- ctor_load_core.cpp  - DPC++ ESIMD on-device test ---------------==//
+//==------- ctor_load_fp_extra.cpp  - DPC++ ESIMD on-device test -----------==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -30,7 +30,7 @@ int main(int, char **) {
                     esimd_test::createExceptionHandler());
 
   bool passed = true;
-  const auto types = get_tested_types<tested_types::core>();
+  const auto types = get_tested_types<tested_types::fp_extra>();
   const auto dims = get_all_dimensions();
 
   const auto contexts =
