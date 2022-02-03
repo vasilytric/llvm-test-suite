@@ -42,13 +42,14 @@ int main(int, char **) {
   bool passed = true;
 
   const auto types = get_tested_types<tested_types::core>();
-  const auto dims = get_all_dimensions();
+  const auto sizes = get_all_dimensions();
   const auto contexts =
       unnamed_type_pack<ctors::initializer, ctors::var_decl,
                         ctors::rval_in_expr, ctors::const_ref>::generate();
 
   // Run test for all combinations possible
-  passed &= for_all_combinations<ctors::run_test>(types, dims, contexts, queue);
+  passed &=
+      for_all_combinations<ctors::run_test>(types, sizes, contexts, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

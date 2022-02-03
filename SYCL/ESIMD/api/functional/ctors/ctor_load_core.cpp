@@ -31,7 +31,7 @@ int main(int, char **) {
 
   bool passed = true;
   const auto types = get_tested_types<tested_types::core>();
-  const auto dims = get_all_dimensions();
+  const auto sizes = get_all_dimensions();
 
   const auto contexts =
       unnamed_type_pack<ctors::initializer, ctors::var_decl,
@@ -40,7 +40,7 @@ int main(int, char **) {
       unnamed_type_pack<ctors::alignment::element, ctors::alignment::vector,
                         ctors::alignment::overal>::generate();
 
-  passed &= for_all_combinations<ctors::run_test>(types, dims, contexts,
+  passed &= for_all_combinations<ctors::run_test>(types, sizes, contexts,
                                                   alignments, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
