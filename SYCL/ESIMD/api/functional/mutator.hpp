@@ -101,9 +101,12 @@ public:
 
   void operator()(T &val) {
     const T upper_border = value<T>::max() / m_value;
+    // we need to update value to avoid UB during multiplication for positive
+    // and negative numbers.
     if (val > upper_border) {
-      // we need to update value to avoid UB during multiplication.
       val = upper_border;
+    } else if (val < -upper_border) {
+      val = -upper_border;
     }
   }
 };
