@@ -292,13 +292,13 @@ template <int... Values> auto inline get_sizes() {
 auto inline get_all_sizes() { return get_sizes<1, 8, 16, 32>(); }
 
 // It's a deprecated function and it exists only for backward compatibility and
-// it should be deleted in the future.
+// it should be deleted in the future. Use get_all_sizes() instead.
 auto inline get_all_dimensions() { return get_all_sizes(); }
 
 // It's a deprecated function and it exists only for backward compatibility and
-// it should be deleted in the future.
+// it should be deleted in the future. Use get_sizes() instead.
 template <int... Values> auto inline get_dimensions() {
-  return integer_pack<Values...>::generate_unnamed();
+  return get_sizes<Values...>();
 }
 
 } // namespace esimd_test::api::functional
