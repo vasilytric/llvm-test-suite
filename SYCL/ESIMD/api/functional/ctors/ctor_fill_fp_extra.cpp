@@ -32,23 +32,23 @@ int main(int, char **) {
   bool passed = true;
 
   const auto fp_types = get_tested_types<tested_types::fp_extra>();
-  const auto single_size = get_dimensions<8>();
+  const auto single_dim = get_dimensions<8>();
   const auto contexts = unnamed_type_pack<ctors::var_decl>::generate();
 
   passed &= for_all_combinations<ctors::run_test>(
-      fp_types, single_size, contexts,
+      fp_types, single_dim, contexts,
       ctors::get_init_values_pack<ctors::init_val::neg_inf>(),
       ctors::get_init_values_pack<ctors::init_val::zero>(), queue);
   passed &= for_all_combinations<ctors::run_test>(
-      fp_types, single_size, contexts,
+      fp_types, single_dim, contexts,
       ctors::get_init_values_pack<ctors::init_val::max>(),
       ctors::get_init_values_pack<ctors::init_val::neg_inf>(), queue);
   passed &= for_all_combinations<ctors::run_test>(
-      fp_types, single_size, contexts,
+      fp_types, single_dim, contexts,
       ctors::get_init_values_pack<ctors::init_val::nan>(),
       ctors::get_init_values_pack<ctors::init_val::negative>(), queue);
   passed &= for_all_combinations<ctors::run_test>(
-      fp_types, single_size, contexts,
+      fp_types, single_dim, contexts,
       ctors::get_init_values_pack<ctors::init_val::zero>(),
       ctors::get_init_values_pack<ctors::init_val::nan>(), queue);
 
