@@ -14,9 +14,11 @@
 
 #pragma once
 
+#include "type_traits.hpp"
 #include "value.hpp"
 #include <sycl/sycl.hpp>
 
+// for std::for_each
 #include <algorithm>
 #include <vector>
 
@@ -43,9 +45,18 @@ public:
       : m_value((assert(val > 0 && "Invalid value."), val)) {}
 
   void operator()(T &val) {
-    if constexpr (std::is_signed_v<T>) {
-      if (val < value<T>::lowest() + m_value) {
-        val = value<T>::lowest() + m_value;
+    // Floating point variable with infinity value shouldn't be changed.
+    if constexpr (type_traits::is_sycl_signed_v<T>) {
+      if constexpr (type_traits::is_sycl_floating_point_v<T>) {
+        // sycl::half will be converted to float
+        if (std::isinf(val)) {
+          return;
+        }
+      }
+
+      const T lower_border = value<T>::lowest() + m_value;
+      if (val < lower_border) {
+        val = lower_border;
       }
     }
   }
@@ -60,9 +71,18 @@ public:
   For_addition(T val) : m_value((assert(val > 0 && "Invalid value."), val)) {}
 
   void operator()(T &val) {
-    if constexpr (std::is_signed_v<T> || std::is_same_v<T, sycl::half>) {
-      if (val > value<T>::max() - m_value) {
-        val = value<T>::max() - m_value;
+    // Floating point variable with infinity value shouldn't be changed.
+    if constexpr (type_traits::is_sycl_floating_point_v<T>) {
+      // sycl::half will be converted to float
+      if (std::isinf(val)) {
+        return;
+      }
+    }
+
+    if constexpr (type_traits::is_sycl_signed_v<T>) {
+      const T upper_border = value<T>::max() - m_value;
+      if (val > upper_border) {
+        val = upper_border;
       }
     }
   }
@@ -70,11 +90,12 @@ public:
 
 // Replace specific reference values to the divided ones, so we can safely
 // multiply to `val` later.
-template <typename T> class For_division {
+template <typename T> class For_multiplication {
   T m_value;
 
 public:
-  For_division(T val) : m_value((assert(val > 0 && "Invalid value."), val)) {}
+  For_multiplication(T val)
+      : m_value((assert(val > 0 && "Invalid value."), val)) {}
 
   void operator()(T &val) {
     if (val != value<T>::denorm_min()) {
@@ -87,7 +108,7 @@ public:
 
 // Applies provided mutator to each value for provided container.
 template <typename T, typename MutatorT>
-void mutate(std::vector<T> &input_vector, MutatorT &&mutator) {
+inline void mutate(std::vector<T> &input_vector, MutatorT &&mutator) {
   std::for_each(input_vector.begin(), input_vector.end(), mutator);
 }
 
