@@ -36,7 +36,7 @@ namespace esimd_test::api::functional {
 namespace mutator {
 
 // Replace specific reference values to the bigger ones, so we can safely
-// substract `val` later.
+// substract `m_value` later.
 template <typename T> class For_subtraction {
   T m_value;
 
@@ -45,17 +45,18 @@ public:
       : m_value((assert(val > 0 && "Invalid value."), val)) {}
 
   void operator()(T &val) {
-    // Floating point variable with infinity value shouldn't be changed.
     if constexpr (type_traits::is_sycl_signed_v<T>) {
-      if constexpr (type_traits::is_sycl_floating_point_v<T>) {
-        // sycl::half will be converted to float
-        if (std::isinf(val)) {
-          return;
-        }
-      }
-
       const T lower_border = value<T>::lowest() + m_value;
       if (val < lower_border) {
+        // Validate only the negative infinity case, as the NaN will not enter
+        // this branch.
+        if constexpr (type_traits::is_sycl_floating_point_v<T>) {
+          // sycl::half will be converted to float
+          if (std::isinf(val)) {
+            return;
+          }
+        }
+        // we need to update value to avoid UB during subtraction.
         val = lower_border;
       }
     }
@@ -63,7 +64,7 @@ public:
 };
 
 // Replace specific reference values to the smaller ones, so we can safely add
-// `val` later.
+// `m_value` later.
 template <typename T> class For_addition {
   T m_value;
 
@@ -71,17 +72,18 @@ public:
   For_addition(T val) : m_value((assert(val > 0 && "Invalid value."), val)) {}
 
   void operator()(T &val) {
-    // Floating point variable with infinity value shouldn't be changed.
-    if constexpr (type_traits::is_sycl_floating_point_v<T>) {
-      // sycl::half will be converted to float
-      if (std::isinf(val)) {
-        return;
-      }
-    }
-
     if constexpr (type_traits::is_sycl_signed_v<T>) {
       const T upper_border = value<T>::max() - m_value;
       if (val > upper_border) {
+        // Validate only the negative infinity case, as the NaN will not enter
+        // this branch.
+        if constexpr (type_traits::is_sycl_floating_point_v<T>) {
+          // sycl::half will be converted to float
+          if (std::isinf(val)) {
+            return;
+          }
+        }
+        // we need to update value to avoid UB during addition.
         val = upper_border;
       }
     }
@@ -89,7 +91,7 @@ public:
 };
 
 // Replace specific reference values to the divided ones, so we can safely
-// multiply to `val` later.
+// multiply to `m_value` later.
 template <typename T> class For_multiplication {
   T m_value;
 
@@ -98,8 +100,10 @@ public:
       : m_value((assert(val > 0 && "Invalid value."), val)) {}
 
   void operator()(T &val) {
-    if (val != value<T>::denorm_min()) {
-      val /= m_value;
+    const T upper_border = value<T>::max() / m_value;
+    if (val > upper_border) {
+      // we need to update value to avoid UB during multiplication.
+      val = upper_border;
     }
   }
 };
