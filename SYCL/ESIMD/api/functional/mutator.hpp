@@ -100,6 +100,13 @@ public:
       : m_value((assert(val > 0 && "Invalid value."), val)) {}
 
   void operator()(T &val) {
+    // We don't need to change the inf values, because inf * value gives inf.
+    if constexpr (type_traits::is_sycl_floating_point_v<T>) {
+      if (val == value<T>::inf() || val == -value<T>::inf()) {
+        return;
+      }
+    }
+
     const T upper_border = value<T>::max() / m_value;
     // we need to update value to avoid UB during multiplication for positive
     // and negative numbers.
