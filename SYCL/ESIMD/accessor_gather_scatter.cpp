@@ -7,6 +7,8 @@
 //===----------------------------------------------------------------------===//
 // REQUIRES: gpu
 // UNSUPPORTED: cuda || hip
+// TODO: esimd_emulator fails due to outdated memory intrinsic
+// XFAIL: esimd_emulator
 // RUN: %clangxx -fsycl %s -o %t.out
 // RUN: %GPU_RUN_PLACEHOLDER %t.out
 //
@@ -22,8 +24,7 @@
 using namespace cl::sycl;
 
 template <typename T>
-using Acc =
-    accessor<T, 1, access_mode::read_write, access::target::global_buffer>;
+using Acc = accessor<T, 1, access_mode::read_write, access::target::device>;
 
 #define MASKED_LANE_NUM_REV 1
 

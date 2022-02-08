@@ -17,9 +17,6 @@
 
 namespace esimd_test::api::functional::ctors {
 
-// Dummy kernel for submitting some code into device side.
-template <typename DataT, int NumElems, typename T> struct Kernel;
-
 template <typename DataT, int NumElems, typename ContextT>
 class TestDescription : public ITestDescription {
 public:

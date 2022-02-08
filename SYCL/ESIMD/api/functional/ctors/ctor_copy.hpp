@@ -1,30 +1,24 @@
-//==------- ctor_copy.cpp  - DPC++ ESIMD on-device test --------------------==//
+//===-- ctor_copy.hpp - Functions for tests on simd copy constructor definition.
+//      -------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// REQUIRES: gpu, level_zero
-// XREQUIRES: gpu
-// TODO gpu and level_zero in REQUIRES due to only this platforms supported yet.
-// The current "REQUIRES" should be replaced with "gpu" only as mentioned in
-// "XREQUIRES".
-// UNSUPPORTED: cuda, hip
-// XRUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
-// XRUN: %GPU_RUN_PLACEHOLDER %t.out
-// RUN: false
-// XFAIL: *
-// TODO Unexpected static_assert was retrieved while calling simd::copy_from()
-// function. The issue was created (https://github.com/intel/llvm/issues/5112)
-// and the test must be enabled when it is resolved.
-//
-// Test for esimd copy constructor.
+///
+/// \file
+/// This file provides functions for tests on simd copy constructor.
+///
+//===----------------------------------------------------------------------===//
+
+#pragma once
 
 #include "common.hpp"
 
-using namespace sycl::ext::intel::experimental::esimd;
-using namespace esimd_test::api::functional;
+namespace esimd = sycl::ext::intel::experimental::esimd;
+
+namespace esimd_test::api::functional::ctors {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct initializer {
@@ -32,9 +26,10 @@ struct initializer {
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data, DataT *const out) {
-    simd<DataT, NumElems> source_simd;
+    esimd::simd<DataT, NumElems> source_simd;
     source_simd.copy_from(ref_data);
-    simd<DataT, NumElems> simd_by_init = simd<DataT, NumElems>(source_simd);
+    esimd::simd<DataT, NumElems> simd_by_init =
+        esimd::simd<DataT, NumElems>(source_simd);
     simd_by_init.copy_to(out);
   }
 };
@@ -46,9 +41,9 @@ struct var_decl {
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data, DataT *const out) {
-    simd<DataT, NumElems> source_simd;
+    esimd::simd<DataT, NumElems> source_simd;
     source_simd.copy_from(ref_data);
-    simd<DataT, NumElems> simd_by_var_decl(source_simd);
+    esimd::simd<DataT, NumElems> simd_by_var_decl(source_simd);
     simd_by_var_decl.copy_to(out);
   }
 };
@@ -60,10 +55,10 @@ struct rval_in_expr {
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data, DataT *const out) {
-    simd<DataT, NumElems> source_simd;
+    esimd::simd<DataT, NumElems> source_simd;
     source_simd.copy_from(ref_data);
-    simd<DataT, NumElems> simd_by_rval;
-    simd_by_rval = simd<DataT, NumElems>(source_simd);
+    esimd::simd<DataT, NumElems> simd_by_rval;
+    simd_by_rval = esimd::simd<DataT, NumElems>(source_simd);
     simd_by_rval.copy_to(out);
   }
 };
@@ -76,16 +71,16 @@ public:
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data, DataT *const out) {
-    simd<DataT, NumElems> source_simd;
+    esimd::simd<DataT, NumElems> source_simd;
     source_simd.copy_from(ref_data);
-    call_simd_by_const_ref<DataT, NumElems>(simd<DataT, NumElems>(source_simd),
-                                            out);
+    call_simd_by_const_ref<DataT, NumElems>(
+        esimd::simd<DataT, NumElems>(source_simd), out);
   }
 
 private:
   template <typename DataT, int NumElems>
   static void
-  call_simd_by_const_ref(const simd<DataT, NumElems> &simd_by_const_ref,
+  call_simd_by_const_ref(const esimd::simd<DataT, NumElems> &simd_by_const_ref,
                          DataT *out) {
     simd_by_const_ref.copy_to(out);
   }
@@ -93,7 +88,9 @@ private:
 
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
-template <typename DataT, int NumElems, typename TestCaseT> class run_test {
+template <typename DataT, typename DimT, typename TestCaseT> class run_test {
+  static constexpr int NumElems = DimT::value;
+
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
     bool passed = true;
@@ -130,7 +127,7 @@ private:
       const DataT *const ref = shared_ref_data.data();
       DataT *const out = result.data();
 
-      cgh.single_task<ctors::Kernel<DataT, NumElems, TestCaseT>>(
+      cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
           [=]() SYCL_ESIMD_KERNEL {
             TestCaseT::template call_simd_ctor<DataT, NumElems>(ref, out);
           });
@@ -152,20 +149,4 @@ private:
   }
 };
 
-int main(int, char **) {
-  sycl::queue queue(esimd_test::ESIMDSelector{},
-                    esimd_test::createExceptionHandler());
-
-  bool passed = true;
-
-  const auto types = get_tested_types<tested_types::all>();
-  const auto dims = get_all_dimensions();
-
-  passed &= for_all_types_and_dims<run_test, initializer>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, var_decl>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, rval_in_expr>(types, dims, queue);
-  passed &= for_all_types_and_dims<run_test, const_ref>(types, dims, queue);
-
-  std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
-  return passed ? 0 : 1;
-}
+} // namespace esimd_test::api::functional::ctors

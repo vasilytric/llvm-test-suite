@@ -100,6 +100,11 @@ if lit_config.params.get('gpu-intel-dg1', False):
 if lit_config.params.get('matrix', False):
     config.available_features.add('matrix')
 
+#support for LIT parameter ze_debug<num>
+if lit_config.params.get('ze_debug'):
+    config.ze_debug = lit_config.params.get('ze_debug')
+    lit_config.note("ZE_DEBUG: "+config.ze_debug)
+
 # check if compiler supports CL command line options
 cl_options=False
 sp = subprocess.getstatusoutput(config.dpcpp_compiler+' /help')
@@ -150,7 +155,11 @@ else:
     config.substitutions.append( ('%include_option',  '-include' ) )
     config.substitutions.append( ('%debug_option',  '-g' ) )
     config.substitutions.append( ('%cxx_std_option',  '-std=' ) )
-    config.substitutions.append( ('%fPIC', '-fPIC') )
+    # Position-independent code does not make sence on Windows. At the same
+    # time providing this option for compilation targeting 
+    # x86_64-pc-windows-msvc will cause compile time error on some
+    # configurations
+    config.substitutions.append( ('%fPIC', ('' if platform.system() == 'Windows' else '-fPIC')) )
     config.substitutions.append( ('%shared_lib', '-shared') )
 
 if not config.gpu_aot_target_opts:
@@ -167,10 +176,19 @@ if config.sycl_be.startswith("PI_"):
     config.sycl_be = config.sycl_be[3:]
 config.sycl_be = config.sycl_be.lower()
 
+# Replace deprecated backend names
+deprecated_names_mapping = {'cuda'       : 'ext_oneapi_cuda',
+                            'hip'        : 'ext_oneapi_hip',
+                            'level_zero' : 'ext_oneapi_level_zero',
+                            'esimd_cpu'  : 'ext_intel_esimd_emulator'}
+if config.sycl_be in deprecated_names_mapping.keys():
+    config.sycl_be = deprecated_names_mapping[config.sycl_be]
+
 lit_config.note("Backend: {BACKEND}".format(BACKEND=config.sycl_be))
 
 config.substitutions.append( ('%sycl_be', config.sycl_be) )
-config.available_features.add(config.sycl_be)
+# Use short names for LIT rules
+config.available_features.add(config.sycl_be.replace('ext_intel_', '').replace('ext_oneapi_', ''))
 config.substitutions.append( ('%BE_RUN_PLACEHOLDER', "env SYCL_DEVICE_FILTER={SYCL_PLUGIN} ".format(SYCL_PLUGIN=config.sycl_be)) )
 
 if config.dump_ir_supported:
@@ -178,14 +196,20 @@ if config.dump_ir_supported:
 
 supported_sycl_be = ['host',
                      'opencl',
-                     'cuda',
-                     'hip',
-                     'level_zero']
+                     'ext_oneapi_cuda',
+                     'ext_oneapi_hip',
+                     'ext_oneapi_level_zero',
+                     'ext_intel_esimd_emulator']
 
 if config.sycl_be not in supported_sycl_be:
    lit_config.error("Unknown SYCL BE specified '" +
                     config.sycl_be +
                     "'. Supported values are {}".format(', '.join(supported_sycl_be)))
+
+# Run only tests in ESIMD subforlder for the ext_intel_esimd_emulator
+if config.sycl_be == 'ext_intel_esimd_emulator':
+   config.test_source_root += "/ESIMD"
+   config.test_exec_root += "/ESIMD"
 
 # If HIP_PLATFORM flag is not set, default to AMD, and check if HIP platform is supported
 supported_hip_platforms=["AMD", "NVIDIA"]
@@ -194,10 +218,10 @@ if config.hip_platform == "":
 if config.hip_platform not in supported_hip_platforms:
     lit_config.error("Unknown HIP platform '" + config.hip_platform + "' supported platforms are " + ', '.join(supported_hip_platforms))
 
-if config.sycl_be == "hip" and config.hip_platform == "AMD":
+if config.sycl_be == "ext_oneapi_hip" and config.hip_platform == "AMD":
     config.available_features.add('hip_amd')
     arch_flag = '-Xsycl-target-backend=amdgcn-amd-amdhsa --offload-arch=' + config.amd_arch
-elif config.sycl_be == "hip" and config.hip_platform == "NVIDIA":
+elif config.sycl_be == "ext_oneapi_hip" and config.hip_platform == "NVIDIA":
     config.available_features.add('hip_nvidia')
     arch_flag = ""
 else:
@@ -264,11 +288,11 @@ cpu_check_on_linux_substitute = ""
 if 'cpu' in config.target_devices.split(','):
     found_at_least_one_device = True
     lit_config.note("Test CPU device")
-    cpu_run_substitute = "env SYCL_DEVICE_FILTER=cpu,host "
+    cpu_run_substitute = "env SYCL_DEVICE_FILTER={SYCL_PLUGIN}:cpu,host ".format(SYCL_PLUGIN=config.sycl_be)
     cpu_check_substitute = "| FileCheck %s"
     config.available_features.add('cpu')
     if platform.system() == "Linux":
-        cpu_run_on_linux_substitute = "env SYCL_DEVICE_FILTER=cpu,host "
+        cpu_run_on_linux_substitute = cpu_run_substitute
         cpu_check_on_linux_substitute = "| FileCheck %s"
 else:
     lit_config.warning("CPU device not used")
@@ -291,12 +315,18 @@ if 'gpu' in config.target_devices.split(','):
     gpu_check_substitute = "| FileCheck %s"
     config.available_features.add('gpu')
 
-    if config.sycl_be == "level_zero":
+    if config.sycl_be == "ext_oneapi_level_zero":
         gpu_l0_check_substitute = "| FileCheck %s"
+        if lit_config.params.get('ze_debug'):
+            gpu_run_substitute = " env ZE_DEBUG={ZE_DEBUG} SYCL_DEVICE_FILTER=level_zero:gpu,host ".format(ZE_DEBUG=config.ze_debug)
+            config.available_features.add('ze_debug'+config.ze_debug)
 
     if platform.system() == "Linux":
         gpu_run_on_linux_substitute = "env SYCL_DEVICE_FILTER={SYCL_PLUGIN}:gpu,host ".format(SYCL_PLUGIN=config.sycl_be)
         gpu_check_on_linux_substitute = "| FileCheck %s"
+
+    if config.sycl_be == "ext_oneapi_cuda":
+        gpu_run_substitute += "SYCL_PI_CUDA_ENABLE_IMAGE_SUPPORT=1 "
 
 else:
     lit_config.warning("GPU device not used")
@@ -320,9 +350,9 @@ else:
 config.substitutions.append( ('%ACC_RUN_PLACEHOLDER',  acc_run_substitute) )
 config.substitutions.append( ('%ACC_CHECK_PLACEHOLDER',  acc_check_substitute) )
 
-if config.sycl_be == 'cuda' or (config.sycl_be == 'hip' and config.hip_platform == 'NVIDIA'):
+if config.sycl_be == 'ext_oneapi_cuda' or (config.sycl_be == 'ext_oneapi_hip' and config.hip_platform == 'NVIDIA'):
     config.substitutions.append( ('%sycl_triple',  "nvptx64-nvidia-cuda" ) )
-elif config.sycl_be == 'hip' and config.hip_platform == 'AMD':
+elif config.sycl_be == 'ext_oneapi_hip' and config.hip_platform == 'AMD':
     config.substitutions.append( ('%sycl_triple',  "amdgcn-amd-amdhsa" ) )
 else:
     config.substitutions.append( ('%sycl_triple',  "spir64" ) )
@@ -341,13 +371,10 @@ xptifw_includes = os.path.join(config.dpcpp_root_dir, 'include')
 if os.path.exists(xptifw_lib_dir) and os.path.exists(os.path.join(xptifw_includes, 'xpti', 'xpti_trace_framework.h')):
     config.available_features.add('xptifw')
     config.substitutions.append(('%xptifw_dispatcher', xptifw_dispatcher))
-    if platform.system() == "Linux":
+    if cl_options:
+        config.substitutions.append(('%xptifw_lib', " {}/xptifw.lib /I{} ".format(xptifw_lib_dir, xptifw_includes)))
+    else:
         config.substitutions.append(('%xptifw_lib', " -L{} -lxptifw -I{} ".format(xptifw_lib_dir, xptifw_includes)))
-    elif platform.system() == "Windows":
-        if cl_options:
-            config.substitutions.append(('%xptifw_lib', " {}/xptifw.lib /I{} ".format(xptifw_lib_dir, xptifw_includes)))
-        else:
-            config.substitutions.append(('%xptifw_lib', " {}/xptifw.lib -I{} ".format(xptifw_lib_dir, xptifw_includes)))
 
 
 llvm_tools = ["llvm-spirv", "llvm-link"]
