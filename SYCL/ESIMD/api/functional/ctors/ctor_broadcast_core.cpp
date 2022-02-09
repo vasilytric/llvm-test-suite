@@ -38,13 +38,42 @@ int main(int, char **) {
 
   bool passed = true;
 
-  const auto types = get_tested_types<tested_types::fp>();
-  const auto single_dim = values_pack<8>();
-
   // Run for specific combinations of types, vector length, base and step values
   // and invocation contexts.
-  ctors::run_test<float, 8, double, ctors::initializer>{}(queue, "float",
-                                                          "double");
+
+  const auto uint_types = get_tested_types<tested_types::uint>();
+  const auto sint_types = get_tested_types<tested_types::sint>();
+  const auto fp_types = get_tested_types<tested_types::fp>();
+  const auto core_types = get_tested_types<tested_types::core>();
+  const auto int_type = named_type_pack<int>::generate("int");
+  using use_positive_value_only = std::true_type;
+  using use_ref_conv_values = std::false_type;
+  const auto single_dim = get_dimensions<8>();
+  const auto two_dims = get_dimensions<1, 8>();
+  const auto all_dims = get_all_dimensions();
+  const auto all_contexts =
+      unnamed_type_pack<ctors::initializer, ctors::var_decl,
+                        ctors::rval_in_expr, ctors::const_ref>::generate();
+  const auto vardecl_context = unnamed_type_pack<ctors::var_decl>::generate();
+
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      int_type, two_dims, uint_types, all_contexts, queue);
+  passed &= for_all_combinations<ctors::run_test, use_positive_value_only>(
+      core_types, all_dims, core_types, all_contexts, queue);
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      fp_types, single_dim, fp_types, vardecl_context, queue);
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      fp_types, single_dim, uint_types, vardecl_context, queue);
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      fp_types, single_dim, sint_types, vardecl_context, queue);
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      uint_types, single_dim, core_types, vardecl_context, queue);
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      sint_types, single_dim, uint_types, vardecl_context, queue);
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      sint_types, single_dim, sint_types, vardecl_context, queue);
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      sint_types, single_dim, fp_types, vardecl_context, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

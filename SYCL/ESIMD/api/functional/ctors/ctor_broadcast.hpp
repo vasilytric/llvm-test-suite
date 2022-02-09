@@ -14,8 +14,9 @@
 
 #pragma once
 
-#include "common.hpp"
 
+#include "common.hpp"
+#include "../value_conv.hpp"
 namespace esimd = sycl::ext::intel::experimental::esimd;
 
 namespace esimd_test::api::functional::ctors {
@@ -95,7 +96,8 @@ public:
 
     log_msg += m_src_data_type + ", " + std::to_string(NumElems) + ">";
     log_msg += ", with context: " + ContextT::get_description();
-    log_msg += ", with value type: " + m_dst_data_type;
+    log_msg += ", with source value type: " + m_src_data_type;
+    log_msg += ", with destination value type: " + m_dst_data_type;
     log_msg += ", retrieved: " + std::to_string(m_retrieved_val);
     log_msg += ", expected: " + std::to_string(m_expected_val);
     log_msg += ", at index: " + std::to_string(m_index);
@@ -111,17 +113,24 @@ private:
   const size_t m_index;
 };
 
-template <typename, int, typename> class Kernel;
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
-template <typename SrcT, int NumElems, typename DstT, typename TestCaseT>
+template <typename UsePositiveValueOnly, typename SrcT, typename DimT,
+          typename DstT, typename TestCaseT>
 class run_test {
+  static constexpr int NumElems = DimT::value;
 
 public:
   bool operator()(sycl::queue &queue, const std::string &src_data_type,
                   const std::string &dst_data_type) {
     bool passed = true;
-    const std::vector<SrcT> ref_data = generate_ref_conv_data<SrcT, DstT, 1>();
+    std::vector<SrcT> ref_data;
+
+    if constexpr (UsePositiveValueOnly::value) {
+      ref_data.push_back(static_cast<SrcT>(126.75));
+    } else {
+      ref_data = generate_ref_conv_data<SrcT, DstT, 1>();
+    }
 
     for (size_t i = 0; i < ref_data.size(); ++i) {
       passed &=
@@ -143,13 +152,17 @@ private:
       const SrcT *const ref = shared_ref_data.data();
       DstT *const out = result.data();
 
-      cgh.single_task<Kernel<SrcT, NumElems, DstT>>([=]() SYCL_ESIMD_KERNEL {
-        TestCaseT::template call_simd_ctor<SrcT, DstT, NumElems>(ref[0], out);
-      });
+      cgh.single_task<Kernel<SrcT, NumElems, DstT, TestCaseT, UsePositiveValueOnly>>(
+          [=]() SYCL_ESIMD_KERNEL {
+            TestCaseT::template call_simd_ctor<SrcT, DstT, NumElems>(ref[0],
+                                                                     out);
+          });
     });
     queue.wait_and_throw();
 
     const DstT &expected = static_cast<DstT>(ref_value);
+    log::note("ref_value is: " + std::to_string(ref_value));
+    log::note("expected is: " + std::to_string(expected));
     bool passed = true;
     for (size_t i = 0; i < result.size(); ++i) {
       const DstT &retrieved = result[i];
@@ -171,7 +184,7 @@ private:
       } else {
         if (expected != retrieved) {
           passed =
-              fail_test(i, expected, retrieved, src_data_type, dst_data_type);
+              fail_test(i, retrieved, expected, src_data_type, dst_data_type);
         }
       }
     }
