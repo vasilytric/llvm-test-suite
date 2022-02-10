@@ -53,8 +53,8 @@ std::vector<SrcT> generate_ref_conv_data() {
   // TODO: Implement functions for obtain lowest and max values without UB
   // cases.
   static const SrcT positive = static_cast<SrcT>(126.75);
-  static const SrcT max = value<SrcT>::max();
-  static const SrcT min = value<SrcT>::lowest();
+  static const SrcT max = 10;
+  static const SrcT min = 2;
   static const SrcT max_half = max / 2;
   static const SrcT min_half = min / 2;
 
