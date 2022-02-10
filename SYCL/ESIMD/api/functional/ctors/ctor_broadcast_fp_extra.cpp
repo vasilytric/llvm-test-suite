@@ -11,13 +11,11 @@
 // The current "REQUIRES" should be replaced with "gpu" only as mentioned in
 // "XREQUIRES".
 // UNSUPPORTED: cuda, hip
-// XRUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
-// XRUN: %GPU_RUN_PLACEHOLDER %t.out
-// RUN: false
+// RUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
+// RUN: %GPU_RUN_PLACEHOLDER %t.out
 // XFAIL: *
-// TODO Unexpected static_assert was retrieved while calling simd::copy_from()
-// function. The issue was created (https://github.com/intel/llvm/issues/5112)
-// and the test must be enabled when it is resolved.
+// TODO The simd filled with unexpected values if the source type is floating
+// point type.
 //
 // Test for simd broadcast constructor.
 // This test uses fp extra data types, dimensionality and different simd
@@ -38,13 +36,24 @@ int main(int, char **) {
 
   bool passed = true;
 
-  const auto types = get_tested_types<tested_types::fp_extra>();
-  const auto single_dim = values_pack<8>();
+  const auto uint_types = get_tested_types<tested_types::uint>();
+  const auto sint_types = get_tested_types<tested_types::sint>();
+  const auto fp_extra_types = get_tested_types<tested_types::fp_extra>();
+  using use_ref_conv_values = std::false_type;
+  const auto single_dim = get_dimensions<8>();
+  const auto vardecl_context = unnamed_type_pack<ctors::var_decl>::generate();
 
   // Run for specific combinations of types, vector length, base and step values
   // and invocation contexts.
-  ctors::run_test<float, 8, double, ctors::initializer>{}(queue, "float",
-                                                          "double");
+  // The source types is the first types, that provided to the
+  // "for_all_combinations" the destination types is the second types that
+  // provided to the "for_all_combinations".
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      fp_extra_types, single_dim, fp_extra_types, vardecl_context, queue);
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      fp_extra_types, single_dim, uint_types, vardecl_context, queue);
+  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+      fp_extra_types, single_dim, sint_types, vardecl_context, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

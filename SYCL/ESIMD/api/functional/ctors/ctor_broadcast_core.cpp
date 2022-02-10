@@ -15,9 +15,7 @@
 // XRUN: %GPU_RUN_PLACEHOLDER %t.out
 // RUN: false
 // XFAIL: *
-// TODO Unexpected static_assert was retrieved while calling simd::copy_from()
-// function. The issue was created (https://github.com/intel/llvm/issues/5112)
-// and the test must be enabled when it is resolved.
+// TODO The simd filled with unexpected values.
 //
 // Test for simd broadcast constructor.
 // This test uses different data types, dimensionality and different simd
@@ -38,9 +36,6 @@ int main(int, char **) {
 
   bool passed = true;
 
-  // Run for specific combinations of types, vector length, base and step values
-  // and invocation contexts.
-
   const auto uint_types = get_tested_types<tested_types::uint>();
   const auto sint_types = get_tested_types<tested_types::sint>();
   const auto fp_types = get_tested_types<tested_types::fp>();
@@ -56,6 +51,11 @@ int main(int, char **) {
                         ctors::rval_in_expr, ctors::const_ref>::generate();
   const auto vardecl_context = unnamed_type_pack<ctors::var_decl>::generate();
 
+  // Run for specific combinations of types, vector length, base and step values
+  // and invocation contexts.
+  // The source types is the first types, that provided to the
+  // "for_all_combinations" the destination types is the second types that
+  // provided to the "for_all_combinations".
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
       int_type, two_dims, uint_types, all_contexts, queue);
   passed &= for_all_combinations<ctors::run_test, use_positive_value_only>(
