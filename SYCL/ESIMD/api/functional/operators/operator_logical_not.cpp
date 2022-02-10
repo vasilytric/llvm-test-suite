@@ -21,6 +21,7 @@
 // not operator, that logical not operator return type is as expected and
 // logical not operator result values is correct.
 
+#include "../shared_element.hpp"
 #include "common.hpp"
 
 using namespace sycl::ext::intel::experimental::esimd;
@@ -30,17 +31,17 @@ using namespace esimd_test::api::functional;
 struct logical_not_operator {
   static std::string get_description() { return "logical not"; }
 
-  template <typename DataT, int NumElems, typename FlagT>
-  static bool call_simd_ctor(const DataT *const ref_data, DataT *const out,
-                             FlagT *const logical_not_res_is_correct) {
+  template <typename DataT, int NumElems, typename OperatorResultT>
+  static bool call_operator(const DataT *const ref_data, DataT *const out,
+                            OperatorResultT *const operator_result) {
     auto simd_obj = simd<DataT, NumElems>();
     simd_obj.copy_from(ref_data);
-    const auto logical_not_result = !simd_obj;
+    auto logical_not_result = !simd_obj;
 
     for (size_t i = 0; i < NumElems; ++i) {
-      *logical_not_res_is_correct &=
-          logical_not_result[i] == (ref_data[i] == 0);
+      operator_result[i] = logical_not_result[i];
     }
+
     simd_obj.copy_to(out);
     return std::is_same_v<decltype(!simd_obj), simd_mask<NumElems>>;
   }
@@ -48,7 +49,7 @@ struct logical_not_operator {
 
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
-template <typename DataT, typename DimT, typename TestCaseT> class run_test {
+template <typename TestCaseT, typename DataT, typename DimT> class run_test {
   static constexpr int NumElems = DimT::value;
 
 public:
@@ -82,26 +83,21 @@ private:
     shared_vector<DataT> result(NumElems, allocator);
     shared_vector<DataT> shared_ref_data(ref_data.begin(), ref_data.end(),
                                          allocator);
-    // TODO replace using std::vector with using shared_element
-    shared_vector<int> logical_not_res_is_correct(1,
-                                                  shared_allocator<int>(queue));
-    shared_vector<int> logical_not_res_type_is_correct(
-        1, shared_allocator<int>(queue));
+
+    shared_vector<int> operator_result(NumElems, shared_allocator<int>(queue));
+    shared_element<bool> is_correct_type(queue, true);
 
     queue.submit([&](sycl::handler &cgh) {
       const DataT *const ref = shared_ref_data.data();
       DataT *const out = result.data();
-      auto logical_not_res_is_correct_storage =
-          logical_not_res_is_correct.data();
-      *logical_not_res_is_correct_storage = true;
-      auto logical_not_res_type_is_correct_storage =
-          logical_not_res_type_is_correct.data();
+      auto operator_result_storage = operator_result.data();
+      auto is_correct_type_storage = is_correct_type.data();
 
-      cgh.single_task<ctors::Kernel<DataT, NumElems, TestCaseT>>(
+      cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
           [=]() SYCL_ESIMD_KERNEL {
-            *logical_not_res_type_is_correct_storage =
-                TestCaseT::template call_simd_ctor<DataT, NumElems>(
-                    ref, out, logical_not_res_is_correct_storage);
+            *is_correct_type_storage =
+                TestCaseT::template call_operator<DataT, NumElems>(
+                    ref, out, operator_result_storage);
           });
     });
     queue.wait_and_throw();
@@ -110,20 +106,21 @@ private:
       if (!are_bitwise_equal(ref_data[i], result[i])) {
         passed = false;
 
-        const auto description =
-            ctors::TestDescription<DataT, NumElems, TestCaseT>(
-                i, result[i], ref_data[i], data_type);
+        const auto description = operators::TestDescription<DataT, NumElems>(
+            i, result[i], ref_data[i], data_type);
+        log::fail(description);
+      }
+      auto retrieved = operator_result[i];
+      auto expected = shared_ref_data[i] == 0;
+      if (expected != retrieved) {
+        passed = false;
+        const auto description = operators::TestDescription<DataT, NumElems>(
+            i, retrieved, expected, data_type);
         log::fail(description);
       }
     }
 
-    if (logical_not_res_is_correct.at(0)) {
-      passed = false;
-      log::note("Test failed due to some elements from logical not operator is "
-                "not equal to \"reference_data == 0 \" for simd<" +
-                data_type + ", " + std::to_string(NumElems) + ">.");
-    }
-    if (logical_not_res_type_is_correct.at(0)) {
+    if (!is_correct_type.value()) {
       passed = false;
       log::note("Test failed due to type of the object that returns " +
                 TestCaseT::get_description() +
@@ -141,13 +138,14 @@ int main(int, char **) {
 
   bool passed = true;
 
-  const auto u_types = get_tested_types<tested_types::uint>();
-  const auto s_types = get_tested_types<tested_types::sint>();
-  const auto dims = get_all_dimensions();
-  const auto context = unnamed_type_pack<logical_not_operator>::generate();
+  const auto uint_types = get_tested_types<tested_types::uint>();
+  const auto sint_types = get_tested_types<tested_types::sint>();
+  const auto all_dims = get_all_dimensions();
 
-  passed &= for_all_combinations<run_test>(u_types, dims, context, queue);
-  passed &= for_all_combinations<run_test>(s_types, dims, context, queue);
+  passed &= for_all_combinations<run_test, logical_not_operator>(
+      uint_types, all_dims, queue);
+  passed &= for_all_combinations<run_test, logical_not_operator>(
+      sint_types, all_dims, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
