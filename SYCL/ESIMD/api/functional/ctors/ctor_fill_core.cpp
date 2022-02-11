@@ -84,7 +84,6 @@ int main(int, char **) {
           types, dims, contexts, base_values, step_values, queue);
     }
   }
-#ifdef ESIMD_TESTS_FULL_COVERAGE
   {
     // Verify specific cases for different type groups
     const auto dims = get_dimensions<8>();
@@ -150,7 +149,7 @@ int main(int, char **) {
       }
     }
   }
-#endif // ESIMD_TESTS_FULL_COVERAGE
+
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
 }
