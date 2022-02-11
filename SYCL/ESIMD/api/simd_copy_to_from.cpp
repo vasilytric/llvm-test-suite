@@ -232,7 +232,8 @@ int main(void) {
   std::cout << "Running on " << Dev.get_info<info::device::name>() << "\n";
 
   bool Pass = true;
-#ifdef FULL_TYPE_COVERAGE
+
+#ifdef ESIMD_TESTS_FULL_TYPE_COVERAGE
   Pass &= testUSM<int8_t>(Q);
   Pass &= testUSM<uint16_t>(Q);
   Pass &= testUSM<int32_t>(Q);

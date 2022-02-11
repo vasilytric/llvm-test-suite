@@ -240,6 +240,7 @@ enum class tested_types { core, small, fp, fp_extra, uint, sint };
 // default type coverage over the tests
 template <tested_types required> auto get_tested_types() {
   if constexpr (required == tested_types::core) {
+#ifdef ESIMD_TESTS_FULL_TYPE_COVERAGE
     return named_type_pack<
         char, unsigned char, signed char, short, unsigned short, int,
         unsigned int, long, unsigned long, float, sycl::half, double, long long,
@@ -248,8 +249,10 @@ template <tested_types required> auto get_tested_types() {
                                       "unsigned int", "long", "unsigned long",
                                       "float", "sycl::half", "double",
                                       "long long", "unsigned long long");
-  } else if constexpr (required == tested_types::small) {
-    return named_type_pack<float, int>::generate("float", "int");
+#else
+    return named_type_pack<float, int, unsigned int, signed char>::generate(
+        "float", "int", "unsigned int", "signed char");
+#endif
   } else if constexpr (required == tested_types::fp) {
     return named_type_pack<float>::generate("float");
   } else if constexpr (required == tested_types::fp_extra) {
@@ -291,6 +294,12 @@ template <int... Values> auto inline get_dimensions() {
 
 // Factory method to retrieve pre-defined values_pack, to have the same
 // default dimensions over the tests
-auto inline get_all_dimensions() { return get_dimensions<1, 8, 16, 32>(); }
+auto inline get_all_dimensions() {
+#ifdef ESIMD_TESTS_FULL_TYPE_COVERAGE
+  return get_dimensions<1, 8, 16, 32>();
+#else
+  return get_dimensions<1, 8>();
+#endif
+}
 
 } // namespace esimd_test::api::functional

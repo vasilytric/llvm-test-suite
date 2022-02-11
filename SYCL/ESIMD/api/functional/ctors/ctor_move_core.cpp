@@ -36,11 +36,8 @@ using namespace esimd_test::api::functional;
 
 int main(int, char **) {
   bool passed = true;
-#ifdef FULL_TYPE_COVERAGE
+
   const auto types = get_tested_types<tested_types::core>();
-#else
-  const auto types = get_tested_types<tested_types::small>();
-#endif
   const auto dims = get_all_dimensions();
   const auto contexts =
       unnamed_type_pack<ctors::initializer, ctors::var_decl,
