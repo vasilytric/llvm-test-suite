@@ -233,7 +233,7 @@ int main(void) {
 
   bool Pass = true;
 
-#ifdef ESIMD_TESTS_FULL_TYPE_COVERAGE
+#ifdef ESIMD_TESTS_FULL_COVERAGE
   Pass &= testUSM<int8_t>(Q);
   Pass &= testUSM<uint16_t>(Q);
   Pass &= testUSM<int32_t>(Q);

@@ -21,7 +21,7 @@
 //  - construct simd with pre-defined base and step value
 //  - bitwise comparing expected and retrieved values
 
-#ifdef ESIMD_TESTS_FULL_TYPE_COVERAGE
+#ifdef ESIMD_TESTS_FULL_COVERAGE
 #define ESIMD_TESTS_FULL_COVERAGE
 #endif
 
@@ -150,7 +150,7 @@ int main(int, char **) {
       }
     }
   }
-#endif // ESIMD_TESTS_FULL_TYPE_COVERAGE
+#endif // ESIMD_TESTS_FULL_COVERAGE
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
 }

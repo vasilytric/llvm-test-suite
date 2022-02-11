@@ -240,7 +240,7 @@ enum class tested_types { core, fp, fp_extra, uint, sint };
 // default type coverage over the tests
 template <tested_types required> auto get_tested_types() {
   if constexpr (required == tested_types::core) {
-#ifdef ESIMD_TESTS_FULL_TYPE_COVERAGE
+#ifdef ESIMD_TESTS_FULL_COVERAGE
     return named_type_pack<
         char, unsigned char, signed char, short, unsigned short, int,
         unsigned int, long, unsigned long, float, sycl::half, double, long long,
@@ -295,7 +295,7 @@ template <int... Values> auto inline get_dimensions() {
 // Factory method to retrieve pre-defined values_pack, to have the same
 // default dimensions over the tests
 auto inline get_all_dimensions() {
-#ifdef ESIMD_TESTS_FULL_TYPE_COVERAGE
+#ifdef ESIMD_TESTS_FULL_COVERAGE
   return get_dimensions<1, 8, 16, 32>();
 #else
   return get_dimensions<1, 8>();
