@@ -234,7 +234,7 @@ inline bool for_all_combinations() {
 //  fp_extra - specific, non C++ data types
 //  uint - all unsigned C++ integral data types
 //  sint - all signed C++ integral data types
-enum class tested_types { core, small, fp, fp_extra, uint, sint };
+enum class tested_types { core, fp, fp_extra, uint, sint };
 
 // Factory method to retrieve pre-defined named_type_pack, to have the same
 // default type coverage over the tests
