@@ -259,6 +259,7 @@ template <tested_types required> auto get_tested_types() {
     return named_type_pack<sycl::half, double>::generate("sycl::half",
                                                          "double");
   } else if constexpr (required == tested_types::uint) {
+#ifdef ESIMD_TESTS_FULL_COVERAGE
     if constexpr (!std::is_signed_v<char>) {
       return named_type_pack<unsigned char, unsigned short, unsigned int,
                              unsigned long, unsigned long long,
@@ -272,7 +273,11 @@ template <tested_types required> auto get_tested_types() {
                                         "unsigned int", "unsigned long",
                                         "unsigned long long");
     }
+#else
+    return named_type_pack<unsigned int>::generate("unsigned int");
+#endif
   } else if constexpr (required == tested_types::sint) {
+#ifdef ESIMD_TESTS_FULL_COVERAGE
     if constexpr (std::is_signed_v<char>) {
       return named_type_pack<signed char, short, int, long, long long,
                              char>::generate("signed char", "short", "int",
@@ -282,6 +287,9 @@ template <tested_types required> auto get_tested_types() {
                              long long>::generate("signed char", "short", "int",
                                                   "long", "long long");
     }
+#else
+    return named_type_pack<int, signed char>::generate("int", "signed char");
+#endif
   } else {
     static_assert(required != required, "Unexpected tested type");
   }
