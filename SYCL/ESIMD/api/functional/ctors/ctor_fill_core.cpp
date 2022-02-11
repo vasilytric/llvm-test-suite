@@ -21,10 +21,6 @@
 //  - construct simd with pre-defined base and step value
 //  - bitwise comparing expected and retrieved values
 
-#ifdef ESIMD_TESTS_FULL_COVERAGE
-#define ESIMD_TESTS_FULL_COVERAGE
-#endif
-
 #include "ctor_fill.hpp"
 
 using namespace esimd_test::api::functional;
