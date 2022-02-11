@@ -232,7 +232,7 @@ int main(void) {
   std::cout << "Running on " << Dev.get_info<info::device::name>() << "\n";
 
   bool Pass = true;
-
+#ifdef FULL_TYPE_COVERAGE
   Pass &= testUSM<int8_t>(Q);
   Pass &= testUSM<uint16_t>(Q);
   Pass &= testUSM<int32_t>(Q);
@@ -248,6 +248,13 @@ int main(void) {
   Pass &= testAcc<float>(Q);
   Pass &= testAcc<double>(Q);
   Pass &= testAcc<half>(Q);
+#else
+  Pass &= testUSM<uint16_t>(Q);
+  Pass &= testUSM<float>(Q);
+
+  Pass &= testAcc<int16_t>(Q);
+  Pass &= testAcc<float>(Q);
+#endif
 
   std::cout << (Pass ? "Test Passed\n" : "Test FAILED\n");
   return Pass ? 0 : 1;

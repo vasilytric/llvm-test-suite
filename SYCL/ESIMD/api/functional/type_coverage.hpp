@@ -234,7 +234,7 @@ inline bool for_all_combinations() {
 //  fp_extra - specific, non C++ data types
 //  uint - all unsigned C++ integral data types
 //  sint - all signed C++ integral data types
-enum class tested_types { core, fp, fp_extra, uint, sint };
+enum class tested_types { core, small, fp, fp_extra, uint, sint };
 
 // Factory method to retrieve pre-defined named_type_pack, to have the same
 // default type coverage over the tests
@@ -248,6 +248,8 @@ template <tested_types required> auto get_tested_types() {
                                       "unsigned int", "long", "unsigned long",
                                       "float", "sycl::half", "double",
                                       "long long", "unsigned long long");
+  } else if constexpr (required == tested_types::small) {
+    return named_type_pack<float, int>::generate("float", "int");
   } else if constexpr (required == tested_types::fp) {
     return named_type_pack<float>::generate("float");
   } else if constexpr (required == tested_types::fp_extra) {

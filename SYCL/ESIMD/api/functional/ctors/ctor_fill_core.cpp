@@ -60,7 +60,12 @@ int main(int, char **) {
   }
   {
     // Validate basic functionality works for every type
+
+#ifdef FULL_TYPE_COVERAGE
     const auto types = get_tested_types<tested_types::core>();
+#else
+    const auto types = get_tested_types<tested_types::small>();
+#endif
     const auto dims = get_all_dimensions();
     const auto contexts = unnamed_type_pack<ctors::var_decl>::generate();
     {
@@ -79,6 +84,7 @@ int main(int, char **) {
           types, dims, contexts, base_values, step_values, queue);
     }
   }
+#ifdef FULL_TYPE_COVERAGE
   {
     // Verify specific cases for different type groups
     const auto dims = get_dimensions<8>();
@@ -144,7 +150,7 @@ int main(int, char **) {
       }
     }
   }
-
+#endif
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
 }
