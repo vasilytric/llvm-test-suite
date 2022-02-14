@@ -28,7 +28,7 @@ using is_base_test = std::false_type;
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct pre_decrement {
-  static std::string get_operator_type() { return "pre decrement"; }
+  static std::string get_description() { return "pre decrement"; }
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data,
@@ -50,7 +50,7 @@ struct pre_decrement {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct post_decrement {
-  static std::string get_operator_type() { return "post decrement"; }
+  static std::string get_description() { return "post decrement"; }
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data,
@@ -72,7 +72,7 @@ struct post_decrement {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct pre_increment {
-  static std::string get_operator_type() { return "pre increment"; }
+  static std::string get_description() { return "pre increment"; }
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data,
@@ -94,7 +94,7 @@ struct pre_increment {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct post_increment {
-  static std::string get_operator_type() { return "post increment"; }
+  static std::string get_description() { return "post increment"; }
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data,
@@ -132,7 +132,7 @@ public:
     log_msg += ", expected: " + std::to_string(m_expected_val);
     log_msg += ", at index: " + std::to_string(m_index);
     log_msg += " for simd as a " + m_simd_type;
-    log_msg += " " + TestCaseT::get_operator_type() + " operator.";
+    log_msg += " " + TestCaseT::get_description() + " operator.";
 
     return log_msg;
   }
