@@ -14,8 +14,9 @@
 
 #pragma once
 
-#include "common.hpp"
 #include "../value_conv.hpp"
+#include "common.hpp"
+
 namespace esimd = sycl::ext::intel::experimental::esimd;
 
 namespace esimd_test::api::functional::ctors {
