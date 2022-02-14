@@ -76,8 +76,8 @@ struct const_ref {
 };
 
 // Struct that calls simd in provided context and then verifies obtained result.
-template <typename DataT, typename DimT, typename TestCaseT> struct run_test {
-  static constexpr int NumElems = DimT::value;
+template <typename DataT, typename SizeT, typename TestCaseT> struct run_test {
+  static constexpr int NumElems = SizeT::value;
 
   bool operator()(sycl::queue &queue, const std::string &data_type) {
     bool passed = true;
@@ -87,7 +87,7 @@ template <typename DataT, typename DimT, typename TestCaseT> struct run_test {
 
     queue.submit([&](sycl::handler &cgh) {
       DataT *const out = result.data();
-      cgh.single_task<ctors::Kernel<DataT, NumElems, TestCaseT>>(
+      cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
           [=]() SYCL_ESIMD_KERNEL {
             TestCaseT::template call_simd_ctor<DataT, NumElems>(out);
           });

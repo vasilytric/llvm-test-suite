@@ -88,8 +88,8 @@ private:
 
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
-template <typename DataT, typename DimT, typename TestCaseT> class run_test {
-  static constexpr int NumElems = DimT::value;
+template <typename DataT, typename SizeT, typename TestCaseT> class run_test {
+  static constexpr int NumElems = SizeT::value;
 
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
@@ -127,7 +127,7 @@ private:
       const DataT *const ref = shared_ref_data.data();
       DataT *const out = result.data();
 
-      cgh.single_task<ctors::Kernel<DataT, NumElems, TestCaseT>>(
+      cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
           [=]() SYCL_ESIMD_KERNEL {
             TestCaseT::template call_simd_ctor<DataT, NumElems>(ref, out);
           });
