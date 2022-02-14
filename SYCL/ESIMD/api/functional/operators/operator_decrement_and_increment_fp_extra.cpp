@@ -16,7 +16,8 @@
 // RUN: %GPU_RUN_PLACEHOLDER %t.out
 //
 // TODO simd<sycl::half, N> vector filled with unexpected value in case current
-// value is equal to -nan.
+// value is equal to -nan. The ESIMD_TESTS_RUN_WITH_HALF macros must be enabled
+// when it is resolved.
 //
 // Test for simd increment and decrement operators.
 // The test creates source simd instance and call increment or decrement
@@ -32,7 +33,7 @@ int main(int, char **) {
                     esimd_test::createExceptionHandler());
 
   bool passed = true;
-#ifdef RUN_TEST_WITH_HALF
+#ifdef ESIMD_TESTS_RUN_WITH_HALF
   const auto fp_extra_types = get_tested_types<tested_types::fp_extra>();
 #else
   const auto fp_extra_types = named_type_pack<double>::generate("double");

@@ -15,8 +15,8 @@
 
 #pragma once
 
-#include "common.hpp"
 #include "../mutator.hpp"
+#include "common.hpp"
 
 namespace esimd = sycl::ext::intel::experimental::esimd;
 namespace esimd_functional = esimd_test::api::functional;
@@ -25,7 +25,7 @@ namespace esimd_test::api::functional::operators {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct pre_decrement {
-  static std::string get_operator_type() { return " pre decrement"; }
+  static std::string get_operator_type() { return "pre decrement"; }
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data,
@@ -38,7 +38,7 @@ struct pre_decrement {
     result_simd.copy_to(result_simd_out);
   }
 
-  template <typename DataT> static DataT apply_operator(DataT val) {
+  template <typename DataT> static DataT apply_operator(DataT &val) {
     return --val;
   }
 
@@ -47,7 +47,7 @@ struct pre_decrement {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct post_decrement {
-  static std::string get_operator_type() { return " post decrement"; }
+  static std::string get_operator_type() { return "post decrement"; }
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data,
@@ -60,8 +60,8 @@ struct post_decrement {
     result_simd.copy_to(result_simd_out);
   }
 
-  template <typename DataT> static DataT apply_operator(DataT val) {
-    return val;
+  template <typename DataT> static DataT apply_operator(DataT &val) {
+    return val--;
   }
 
   static constexpr bool is_increment() { return false; }
@@ -69,7 +69,7 @@ struct post_decrement {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct pre_increment {
-  static std::string get_operator_type() { return " pre increment"; }
+  static std::string get_operator_type() { return "pre increment"; }
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data,
@@ -82,7 +82,7 @@ struct pre_increment {
     result_simd.copy_to(result_simd_out);
   }
 
-  template <typename DataT> static DataT apply_operator(DataT val) {
+  template <typename DataT> static DataT apply_operator(DataT &val) {
     return ++val;
   }
 
@@ -91,7 +91,7 @@ struct pre_increment {
 
 // Descriptor class for the case of calling constructor in initializer context.
 struct post_increment {
-  static std::string get_operator_type() { return " post increment"; }
+  static std::string get_operator_type() { return "post increment"; }
 
   template <typename DataT, int NumElems>
   static void call_simd_ctor(const DataT *const ref_data,
@@ -104,23 +104,22 @@ struct post_increment {
     result_simd.copy_to(result_simd_out);
   }
 
-  template <typename DataT> static DataT apply_operator(DataT val) {
-    return val;
+  template <typename DataT> static DataT apply_operator(DataT &val) {
+    return val++;
   }
 
   static constexpr bool is_increment() { return true; }
 };
 
-template <typename DataT, int NumElems, typename ContextT>
+template <typename DataT, int NumElems, typename TestCaseT>
 class IncrementAndDecrementTestDescription : public ITestDescription {
 public:
-  IncrementAndDecrementTestDescription(
-      size_t index, DataT retrieved_val, DataT expected_val,
-      const std::string &source_or_destination_simd,
-      const std::string &data_type)
+  IncrementAndDecrementTestDescription(size_t index, DataT retrieved_val,
+                                       DataT expected_val,
+                                       const std::string &simd_type,
+                                       const std::string &data_type)
       : m_data_type(data_type), m_retrieved_val(retrieved_val),
-        m_expected_val(expected_val), m_index(index),
-        m_is_source_or_dst_simd(source_or_destination_simd) {}
+        m_expected_val(expected_val), m_index(index), m_simd_type(simd_type) {}
 
   std::string to_string() const override {
     std::string log_msg("Failed for simd<");
@@ -129,8 +128,8 @@ public:
     log_msg += ", retrieved: " + std::to_string(m_retrieved_val);
     log_msg += ", expected: " + std::to_string(m_expected_val);
     log_msg += ", at index: " + std::to_string(m_index);
-    log_msg += " for simd as a " + m_is_source_or_dst_simd;
-    log_msg += ContextT::get_operator_type() + " operator.";
+    log_msg += " for simd as a " + m_simd_type;
+    log_msg += " " + TestCaseT::get_operator_type() + " operator.";
 
     return log_msg;
   }
@@ -140,7 +139,7 @@ private:
   const DataT m_retrieved_val;
   const DataT m_expected_val;
   const size_t m_index;
-  const std::string m_is_source_or_dst_simd;
+  const std::string m_simd_type;
 };
 
 // The main test routine.
@@ -201,21 +200,14 @@ private:
     queue.wait_and_throw();
 
     for (size_t i = 0; i < NumElems; ++i) {
+      DataT expected_source_value = shared_ref_data[i];
 
-      DataT expected_value = shared_ref_data[i];
-      DataT source_simd_expected_value = expected_value;
+      const DataT expected_return_value =
+          TestCaseT::apply_operator(expected_source_value);
 
-      if constexpr (TestCaseT::is_increment()) {
-        ++source_simd_expected_value;
-      } else {
-        --source_simd_expected_value;
-      }
-
-      passed &= verify_result(i, source_simd_expected_value, source_simd_out[i],
-                              "result of calling", data_type);
-
-      expected_value = TestCaseT::apply_operator(expected_value);
-      passed &= verify_result(i, expected_value, result_simd_out[i],
+      passed &= verify_result(i, expected_source_value, source_simd_out[i],
+                              "result value after", data_type);
+      passed &= verify_result(i, expected_return_value, result_simd_out[i],
                               "return value for", data_type);
     }
 
@@ -223,7 +215,7 @@ private:
   }
 
   bool verify_result(size_t i, DataT expected, DataT retrieved,
-                     std::string &&context, const std::string data_type) {
+                     std::string &&simd_type, const std::string &data_type) {
     bool passed = true;
     if constexpr (type_traits::is_sycl_floating_point_v<DataT>) {
       if (std::isnan(expected) && !std::isnan(retrieved)) {
@@ -244,7 +236,7 @@ private:
 
       const auto description =
           IncrementAndDecrementTestDescription<DataT, NumElems, TestCaseT>(
-              i, retrieved, expected, context, data_type);
+              i, retrieved, expected, simd_type, data_type);
       log::fail(description);
     }
     return passed;
