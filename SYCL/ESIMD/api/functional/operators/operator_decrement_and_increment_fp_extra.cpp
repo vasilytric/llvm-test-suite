@@ -38,14 +38,14 @@ int main(int, char **) {
 #else
   const auto fp_extra_types = named_type_pack<double>::generate("double");
 #endif
-  const auto all_dims = get_all_dimensions();
+  const auto all_sizes = get_all_sizes();
   const auto operators =
       unnamed_type_pack<operators::pre_increment, operators::post_increment,
                         operators::pre_decrement,
                         operators::post_decrement>::generate();
 
   passed &= for_all_combinations<operators::run_test, operators::is_base_test>(
-      fp_extra_types, all_dims, operators, queue);
+      fp_extra_types, all_sizes, operators, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

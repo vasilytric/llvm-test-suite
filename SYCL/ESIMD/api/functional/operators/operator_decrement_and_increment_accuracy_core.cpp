@@ -31,14 +31,14 @@ int main(int, char **) {
   bool passed = true;
 
   const auto u_types = get_tested_types<tested_types::fp>();
-  const auto sizes = get_all_dimensions();
+  const auto all_sizes = get_all_sizes();
   const auto contexts =
       unnamed_type_pack<operators::pre_increment,
                         operators::post_increment>::generate();
 
   passed &=
       for_all_combinations<operators::run_test, operators::is_fp_accuracy_test>(
-          u_types, sizes, contexts, queue);
+          u_types, all_sizes, contexts, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
