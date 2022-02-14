@@ -23,6 +23,9 @@ namespace esimd_functional = esimd_test::api::functional;
 
 namespace esimd_test::api::functional::operators {
 
+using is_fp_accuracy_test = std::true_type;
+using is_base_test = std::false_type;
+
 // Descriptor class for the case of calling constructor in initializer context.
 struct pre_decrement {
   static std::string get_operator_type() { return "pre decrement"; }
@@ -144,18 +147,52 @@ private:
 
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
-template <typename DataT, typename SizeT, typename TestCaseT> class run_test {
+template <typename IsAccuracyTestT, typename DataT, typename SizeT,
+          typename TestCaseT>
+class run_test {
   static constexpr int NumElems = SizeT::value;
 
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
     bool passed = true;
-    std::vector<DataT> ref_data = generate_ref_data<DataT, NumElems>();
+    std::vector<DataT> ref_data;
 
-    if constexpr (TestCaseT::is_increment()) {
-      mutate(ref_data, mutator::For_addition<DataT>(1));
-    } else if constexpr (!TestCaseT::is_increment()) {
-      mutate(ref_data, mutator::For_subtraction<DataT>(1));
+    if constexpr (!IsAccuracyTestT::value) {
+      ref_data = generate_ref_data<DataT, NumElems>();
+
+      if constexpr (TestCaseT::is_increment()) {
+        mutate(ref_data, mutator::For_addition<DataT>(1));
+      } else if constexpr (!TestCaseT::is_increment()) {
+        mutate(ref_data, mutator::For_subtraction<DataT>(1));
+      }
+    } else {
+      static const DataT min = value<DataT>::lowest();
+      static const DataT denorm_min = value<DataT>::denorm_min();
+      static const DataT max = value<DataT>::max();
+      static const DataT zero_point_one = static_cast<DataT>(0.1);
+      static const DataT one_point_zero = 1.0;
+
+      if constexpr (TestCaseT::is_increment()) {
+        ref_data.reserve((NumElems > 1) ? NumElems : 6);
+        ref_data.insert(ref_data.end(),
+                        {zero_point_one, denorm_min, -denorm_min,
+                         -one_point_zero + value<DataT>::pos_ulp(42U),
+                         min + value<DataT>::pos_ulp(42U),
+                         (max - 1) + value<DataT>::neg_ulp(42U)});
+        for (size_t i = ref_data.size(); i < NumElems; ++i) {
+          ref_data.push_back(0.1 * i);
+        }
+      } else if constexpr (!TestCaseT::is_increment()) {
+        ref_data.reserve((NumElems > 1) ? NumElems : 6);
+        ref_data.insert(ref_data.end(),
+                        {zero_point_one, denorm_min, -denorm_min,
+                         -one_point_zero + value<DataT>::neg_ulp(42U),
+                         max + value<DataT>::neg_ulp(42U),
+                         (min + 1) + value<DataT>::pos_ulp(42U)});
+        for (size_t i = ref_data.size(); i < NumElems; ++i) {
+          ref_data.push_back(0.1 * i);
+        }
+      }
     }
 
     // If current number of elements is equal to one, then run test with each
