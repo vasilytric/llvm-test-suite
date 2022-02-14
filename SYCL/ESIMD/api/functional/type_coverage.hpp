@@ -307,7 +307,7 @@ auto inline get_all_sizes() {
   return get_sizes<1, 8, 16, 32>();
 #else
   return get_sizes<1, 8>();
-#endif 
+#endif
 }
 
 // It's a deprecated function and it exists only for backward compatibility and
