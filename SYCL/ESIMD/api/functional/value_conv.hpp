@@ -55,7 +55,8 @@ std::vector<SrcT> generate_ref_conv_data() {
   static const SrcT positive = static_cast<SrcT>(126.75);
   static const SrcT max = 10;
   // Use zero for unsigned types
-  static const SrcT min = std::min(-max, static_cast<SrcT>(0));
+  static const SrcT min =
+      std::min(static_cast<SrcT>(-max), static_cast<SrcT>(0));
   static const SrcT max_half = max / 2;
   static const SrcT min_half = min / 2;
 
