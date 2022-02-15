@@ -69,8 +69,8 @@ int main(int, char **) {
   const auto context =
       unnamed_type_pack<move_assignment, copy_assignment>::generate();
 
-  passed &=
-      for_all_combinations<operators::run_test>(types, all_sizes, context, queue);
+  passed &= for_all_combinations<operators::run_test>(types, all_sizes, context,
+                                                      queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
