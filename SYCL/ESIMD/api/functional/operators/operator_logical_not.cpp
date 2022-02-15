@@ -54,6 +54,7 @@ template <typename TestCaseT, typename DataT, typename DimT> class run_test {
 
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
+    std::cout << "start test with " << data_type << std::endl;
     bool passed = true;
     const std::vector<DataT> ref_data = generate_ref_data<DataT, NumElems>();
 
@@ -76,6 +77,7 @@ private:
                         const std::string &data_type) {
     assert(ref_data.size() == NumElems &&
            "Reference data size is not equal to the simd vector length.");
+    std::cout << "in run_verification" << std::endl;
 
     bool passed = true;
 
@@ -87,6 +89,7 @@ private:
     shared_vector<int> operator_result(NumElems, shared_allocator<int>(queue));
     shared_element<bool> is_correct_type(queue, true);
 
+    std::cout << "before queue.submit" << std::endl;
     queue.submit([&](sycl::handler &cgh) {
       const DataT *const ref = shared_ref_data.data();
       DataT *const out = result.data();
@@ -101,6 +104,7 @@ private:
           });
     });
     queue.wait_and_throw();
+    std::cout << "after queue.submit" << std::endl;
 
     for (size_t i = 0; i < result.size(); ++i) {
       if (!are_bitwise_equal(ref_data[i], result[i])) {
@@ -119,6 +123,7 @@ private:
         log::fail(description);
       }
     }
+    std::cout << "after bitwise comparison" << std::endl;
 
     if (!is_correct_type.value()) {
       passed = false;
@@ -127,6 +132,7 @@ private:
                 " operator is not equal to the expected one for simd<" +
                 data_type + ", " + std::to_string(NumElems) + ">.");
     }
+    std::cout << "after !is_correct_type.value()" << std::endl;
 
     return passed;
   }
@@ -141,11 +147,14 @@ int main(int, char **) {
   const auto uint_types = get_tested_types<tested_types::uint>();
   const auto sint_types = get_tested_types<tested_types::sint>();
   const auto all_dims = get_all_dimensions();
+  std::cout << "after reserving test variables" << std::endl;
 
   passed &= for_all_combinations<run_test, logical_not_operator>(
       uint_types, all_dims, queue);
+  std::cout << "after uint_types" << std::endl;
   passed &= for_all_combinations<run_test, logical_not_operator>(
       sint_types, all_dims, queue);
+  std::cout << "after uint_types" << std::endl;
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
