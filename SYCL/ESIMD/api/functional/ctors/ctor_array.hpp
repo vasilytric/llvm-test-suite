@@ -96,7 +96,7 @@ template <typename DataT, typename SizeT, typename TestCaseT> class run_test {
 
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
-    if (!should_run_test_with_current_datatype<DataT>(queue.get_device())) {
+    if (should_skip_test_with<DataT>(queue.get_device())) {
       return true;
     }
 
