@@ -18,8 +18,8 @@
 // point type.
 //
 // Test for simd broadcast constructor.
-// This test uses fp extra data types, dimensionality and different simd
-// constructor invocation contexts.
+// This test uses fp extra data types, sizes and different simd constructor
+// invocation contexts.
 // Type of a value that will be provided to the broadcast constructor may be
 // differ, than value, that will be provided to the simd when it will be
 // constructed. It is expected for a new simd instance to store same data as the
@@ -40,7 +40,7 @@ int main(int, char **) {
   const auto sint_types = get_tested_types<tested_types::sint>();
   const auto fp_extra_types = get_tested_types<tested_types::fp_extra>();
   using use_ref_conv_values = std::false_type;
-  const auto single_dim = get_dimensions<8>();
+  const auto single_size = get_sizes<8>();
   const auto context = unnamed_type_pack<ctors::var_decl>::generate();
 
   // Run for specific combinations of types, vector length, base and step values
@@ -49,11 +49,11 @@ int main(int, char **) {
   // "for_all_combinations" the destination types is the second types that
   // provided to the "for_all_combinations".
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      fp_extra_types, single_dim, fp_extra_types, context, queue);
+      fp_extra_types, single_size, fp_extra_types, context, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      fp_extra_types, single_dim, uint_types, context, queue);
+      fp_extra_types, single_size, uint_types, context, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      fp_extra_types, single_dim, sint_types, context, queue);
+      fp_extra_types, single_size, sint_types, context, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
