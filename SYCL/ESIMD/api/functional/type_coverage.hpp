@@ -243,12 +243,12 @@ template <tested_types required> auto get_tested_types() {
 #ifdef ESIMD_TESTS_FULL_COVERAGE
     return named_type_pack<
         char, unsigned char, signed char, short, unsigned short, int,
-        unsigned int, long, unsigned long, float, sycl::half, double, long long,
+        unsigned int, long, unsigned long, float, long long,
         unsigned long long>::generate("char", "unsigned char", "signed char",
                                       "short", "unsigned short", "int",
                                       "unsigned int", "long", "unsigned long",
-                                      "float", "sycl::half", "double",
-                                      "long long", "unsigned long long");
+                                      "float", "long long",
+                                      "unsigned long long");
 #else
     return named_type_pack<float, int, unsigned int, signed char>::generate(
         "float", "int", "unsigned int", "signed char");
