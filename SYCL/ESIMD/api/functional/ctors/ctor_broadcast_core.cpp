@@ -56,23 +56,23 @@ int main(int, char **) {
   // The source types is the first types, that provided to the
   // "for_all_combinations" the destination types is the second types that
   // provided to the "for_all_combinations".
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       int_type, two_sizes, uint_types, all_contexts, queue);
-  passed &= for_all_combinations<ctors::run_test, use_positive_value_only>(
+  passed &= for_all_combinations<ctors::run_test_with_positive_value_only>(
       core_types, all_sizes, core_types, all_contexts, queue);
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       fp_types, single_size, fp_types, context, queue);
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       fp_types, single_size, uint_types, context, queue);
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       fp_types, single_size, sint_types, context, queue);
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       uint_types, single_size, core_types, context, queue);
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       sint_types, single_size, uint_types, context, queue);
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       sint_types, single_size, sint_types, context, queue);
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       sint_types, single_size, fp_types, context, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");

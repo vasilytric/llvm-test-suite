@@ -39,7 +39,6 @@ int main(int, char **) {
   const auto uint_types = get_tested_types<tested_types::uint>();
   const auto sint_types = get_tested_types<tested_types::sint>();
   const auto fp_extra_types = get_tested_types<tested_types::fp_extra>();
-  using use_ref_conv_values = std::false_type;
   const auto single_size = get_sizes<8>();
   const auto context = unnamed_type_pack<ctors::var_decl>::generate();
 
@@ -48,11 +47,11 @@ int main(int, char **) {
   // The source types is the first types, that provided to the
   // "for_all_combinations" the destination types is the second types that
   // provided to the "for_all_combinations".
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       fp_extra_types, single_size, fp_extra_types, context, queue);
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       fp_extra_types, single_size, uint_types, context, queue);
-  passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
       fp_extra_types, single_size, sint_types, context, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");

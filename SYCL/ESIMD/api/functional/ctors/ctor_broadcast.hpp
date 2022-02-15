@@ -207,4 +207,12 @@ private:
   }
 };
 
+template <typename SrcT, typename SizeT, typename DstT, typename TestCaseT>
+using run_test_with_ref_conv_values =
+    run_test<std::false_type, SrcT, SizeT, DstT, TestCaseT>;
+
+template <typename SrcT, typename SizeT, typename DstT, typename TestCaseT>
+using run_test_with_positive_value_only =
+    run_test<std::true_type, SrcT, SizeT, DstT, TestCaseT>;
+
 } // namespace esimd_test::api::functional::ctors
