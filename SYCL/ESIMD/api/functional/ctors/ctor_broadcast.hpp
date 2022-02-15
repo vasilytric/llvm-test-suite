@@ -65,12 +65,12 @@ public:
 
   template <typename SrcT, typename DstT, int NumElems>
   static void call_simd_ctor(SrcT ref_value, DstT *const out) {
-    call_simd_by_const_ref<SrcT, DstT, NumElems>(
+    call_simd_by_const_ref<DstT, NumElems>(
         esimd::simd<DstT, NumElems>(ref_value), out);
   }
 
 private:
-  template <typename SrcT, typename DstT, int NumElems>
+  template <typename DstT, int NumElems>
   static void
   call_simd_by_const_ref(const esimd::simd<DstT, NumElems> &simd_by_const_ref,
                          DstT *const out) {
@@ -96,11 +96,11 @@ public:
 
     log_msg += m_src_data_type + ", " + std::to_string(NumElems) + ">";
     log_msg += ", with context: " + ContextT::get_description();
-    log_msg += ", with source value type: " + m_src_data_type;
-    log_msg += ", with destination value type: " + m_dst_data_type;
+    log_msg += ", source type: " + m_src_data_type;
+    log_msg += ", destination type: " + m_dst_data_type;
     log_msg += ", retrieved: " + std::to_string(m_retrieved_val);
     log_msg += ", expected: " + std::to_string(m_expected_val);
-    log_msg += ", ref value: " + std::to_string(m_ref_val);
+    log_msg += ", input: " + std::to_string(m_ref_val);
     log_msg += ", at index: " + std::to_string(m_index);
 
     return log_msg;

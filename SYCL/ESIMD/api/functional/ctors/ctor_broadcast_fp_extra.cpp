@@ -41,7 +41,7 @@ int main(int, char **) {
   const auto fp_extra_types = get_tested_types<tested_types::fp_extra>();
   using use_ref_conv_values = std::false_type;
   const auto single_dim = get_dimensions<8>();
-  const auto vardecl_context = unnamed_type_pack<ctors::var_decl>::generate();
+  const auto context = unnamed_type_pack<ctors::var_decl>::generate();
 
   // Run for specific combinations of types, vector length, base and step values
   // and invocation contexts.
@@ -49,11 +49,11 @@ int main(int, char **) {
   // "for_all_combinations" the destination types is the second types that
   // provided to the "for_all_combinations".
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      fp_extra_types, single_dim, fp_extra_types, vardecl_context, queue);
+      fp_extra_types, single_dim, fp_extra_types, context, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      fp_extra_types, single_dim, uint_types, vardecl_context, queue);
+      fp_extra_types, single_dim, uint_types, context, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      fp_extra_types, single_dim, sint_types, vardecl_context, queue);
+      fp_extra_types, single_dim, sint_types, context, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

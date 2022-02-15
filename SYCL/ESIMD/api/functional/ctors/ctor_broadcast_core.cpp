@@ -49,7 +49,7 @@ int main(int, char **) {
   const auto all_contexts =
       unnamed_type_pack<ctors::initializer, ctors::var_decl,
                         ctors::rval_in_expr, ctors::const_ref>::generate();
-  const auto vardecl_context = unnamed_type_pack<ctors::var_decl>::generate();
+  const auto context = unnamed_type_pack<ctors::var_decl>::generate();
 
   // Run for specific combinations of types, vector length, base and step values
   // and invocation contexts.
@@ -61,19 +61,19 @@ int main(int, char **) {
   passed &= for_all_combinations<ctors::run_test, use_positive_value_only>(
       core_types, all_dims, core_types, all_contexts, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      fp_types, single_dim, fp_types, vardecl_context, queue);
+      fp_types, single_dim, fp_types, context, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      fp_types, single_dim, uint_types, vardecl_context, queue);
+      fp_types, single_dim, uint_types, context, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      fp_types, single_dim, sint_types, vardecl_context, queue);
+      fp_types, single_dim, sint_types, context, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      uint_types, single_dim, core_types, vardecl_context, queue);
+      uint_types, single_dim, core_types, context, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      sint_types, single_dim, uint_types, vardecl_context, queue);
+      sint_types, single_dim, uint_types, context, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      sint_types, single_dim, sint_types, vardecl_context, queue);
+      sint_types, single_dim, sint_types, context, queue);
   passed &= for_all_combinations<ctors::run_test, use_ref_conv_values>(
-      sint_types, single_dim, fp_types, vardecl_context, queue);
+      sint_types, single_dim, fp_types, context, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
