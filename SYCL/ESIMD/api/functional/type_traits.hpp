@@ -31,7 +31,7 @@ inline constexpr bool is_sycl_floating_point_v{
 
 template <typename T>
 using is_sycl_signed =
-    std::bool_constant<std::is_signed_v<T> || std::is_same_v<T, sycl::half>>;
+    std::bool_constant<std::is_signed_v<T> || is_sycl_floating_point_v<T>>;
 
 template <typename T>
 inline constexpr bool is_sycl_signed_v{is_sycl_signed<T>::value};

@@ -47,11 +47,11 @@ int main(int, char **) {
   // The source types is the first types, that provided to the
   // "for_all_combinations" the destination types is the second types that
   // provided to the "for_all_combinations".
-  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_all_values>(
       fp_extra_types, single_size, fp_extra_types, context, queue);
-  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_all_values>(
       fp_extra_types, single_size, uint_types, context, queue);
-  passed &= for_all_combinations<ctors::run_test_with_ref_conv_values>(
+  passed &= for_all_combinations<ctors::run_test_with_all_values>(
       fp_extra_types, single_size, sint_types, context, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");

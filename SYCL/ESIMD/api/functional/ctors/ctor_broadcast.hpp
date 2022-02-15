@@ -94,7 +94,7 @@ public:
     // by using hex representation
     std::string log_msg("Failed for simd<");
 
-    log_msg += m_src_data_type + ", " + std::to_string(NumElems) + ">";
+    log_msg += m_dst_data_type + ", " + std::to_string(NumElems) + ">";
     log_msg += ", with context: " + ContextT::get_description();
     log_msg += ", source type: " + m_src_data_type;
     log_msg += ", destination type: " + m_dst_data_type;
@@ -208,7 +208,7 @@ private:
 };
 
 template <typename SrcT, typename SizeT, typename DstT, typename TestCaseT>
-using run_test_with_ref_conv_values =
+using run_test_with_all_values =
     run_test<std::false_type, SrcT, SizeT, DstT, TestCaseT>;
 
 template <typename SrcT, typename SizeT, typename DstT, typename TestCaseT>
