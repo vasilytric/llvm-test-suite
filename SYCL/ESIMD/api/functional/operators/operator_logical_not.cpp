@@ -38,8 +38,12 @@ struct logical_not_operator {
     simd_obj.copy_from(ref_data);
     auto logical_not_result = !simd_obj;
 
+    for (size_t i = 0; i < NumElems; ++i) {
+      operator_result[i] = logical_not_result[i];
+    }
+
     simd_obj.copy_to(out);
-    return std::is_same_v<decltype(!simd_obj), simd_mask<NumElems>>;
+    return true;
   }
 };
 
@@ -102,7 +106,7 @@ private:
     queue.wait_and_throw();
     std::cout << "after queue.submit" << std::endl;
 
-    /*for (size_t i = 0; i < result.size(); ++i) {
+    for (size_t i = 0; i < result.size(); ++i) {
       if (!are_bitwise_equal(ref_data[i], result[i])) {
         passed = false;
 
@@ -118,7 +122,7 @@ private:
             i, retrieved, expected, data_type);
         log::fail(description);
       }
-    }*/
+    }
     std::cout << "after bitwise comparison" << std::endl;
 
     if (!is_correct_type.value()) {
