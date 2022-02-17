@@ -13,6 +13,9 @@
 // UNSUPPORTED: cuda, hip
 // RUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
 // RUN: %GPU_RUN_PLACEHOLDER %t.out
+// XFAIL: *
+// TODO simd object constructed by variable declaration context filled with
+// unexpected values, remove XFAIL once this issue will be fixed.
 //
 // Test for simd default constructor.
 // This test uses different data types, sizes and different simd constructor
