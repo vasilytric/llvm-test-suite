@@ -23,9 +23,6 @@ namespace esimd_functional = esimd_test::api::functional;
 
 namespace esimd_test::api::functional::operators {
 
-using is_fp_accuracy_test = std::true_type;
-using is_base_test = std::false_type;
-
 // Descriptor class for the case of calling constructor in initializer context.
 struct pre_decrement {
   static std::string get_description() { return "pre decrement"; }
@@ -153,7 +150,7 @@ struct base_test {
 
     if constexpr (TestCaseT::is_increment()) {
       mutate(ref_data, mutator::For_addition<DataT>(1));
-    } else if constexpr (!TestCaseT::is_increment()) {
+    } else {
       mutate(ref_data, mutator::For_subtraction<DataT>(1));
     }
 
@@ -178,20 +175,20 @@ struct fp_accuracy_test {
                        value<DataT>::pos_ulp(static_cast<DataT>(-1.0)),
                        value<DataT>::pos_ulp(min),
                        value<DataT>::neg_ulp(max - 1)});
-      for (size_t i = ref_data.size(); i < NumElems; ++i) {
-        ref_data.push_back(inexact * i);
-      }
-    } else if constexpr (!TestCaseT::is_increment()) {
+
+    } else {
       ref_data.reserve((NumElems > 1) ? NumElems : 6);
       ref_data.insert(ref_data.end(),
                       {inexact, denorm_min, -denorm_min,
                        value<DataT>::neg_ulp(static_cast<DataT>(-1.0)),
                        value<DataT>::neg_ulp(max),
                        value<DataT>::pos_ulp(min + 1)});
-      for (size_t i = ref_data.size(); i < NumElems; ++i) {
-        ref_data.push_back(inexact * i);
-      }
     }
+
+    for (size_t i = ref_data.size(); i < NumElems; ++i) {
+      ref_data.push_back(inexact * i);
+    }
+
     return ref_data;
   }
 };
@@ -284,7 +281,7 @@ private:
         log::note(log_msg);
       }
     }
-    if (are_bitwise_equal(expected, retrieved)) {
+    if (!are_bitwise_equal(expected, retrieved)) {
       passed = false;
 
       const auto description =
