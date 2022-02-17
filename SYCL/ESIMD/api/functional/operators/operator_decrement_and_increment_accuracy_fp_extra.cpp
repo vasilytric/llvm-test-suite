@@ -45,7 +45,7 @@ int main(int, char **) {
                         operators::post_decrement>::generate();
 
   passed &=
-      for_all_combinations<operators::run_test, operators::is_fp_accuracy_test>(
+      for_all_combinations<operators::run_test, operators::fp_accuracy_test>(
           fp_extra_types, all_sizes, contexts, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
