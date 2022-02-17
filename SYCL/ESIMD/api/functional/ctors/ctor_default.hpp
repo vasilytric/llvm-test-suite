@@ -92,6 +92,7 @@ template <typename DataT, typename SizeT, typename TestCaseT> struct run_test {
             TestCaseT::template call_simd_ctor<DataT, NumElems>(out);
           });
     });
+    queue.wait_and_throw();
 
     for (size_t i = 0; i < result.size(); ++i) {
       if (result[i] != default_val) {
