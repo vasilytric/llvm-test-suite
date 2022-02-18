@@ -99,8 +99,10 @@ template <typename DataT, typename SizeT, typename TestCaseT> struct run_test {
       queue.wait_and_throw();
     } catch (const sycl::exception &e) {
       passed = false;
-      std::string error_msg =
-          "a SYCL exception was caught: " + std::string(e.what());
+      std::string error_msg("A SYCL exception was caught:");
+      error_msg += std::string(e.what());
+      error_msg += " for simd<" + data_type;
+      error_msg += ", " + std::to_string(NumElems) + ">";
       error_msg += ", with context: " + TestCaseT::get_description();
       log::note(error_msg);
     }
