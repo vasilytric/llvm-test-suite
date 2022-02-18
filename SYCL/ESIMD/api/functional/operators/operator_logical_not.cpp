@@ -38,7 +38,7 @@ struct logical_not_operator {
   template <typename DataT, int NumElems, typename OperatorResultT>
   static bool call_operator(const DataT *const ref_data, DataT *const out,
                             OperatorResultT *const operator_result) {
-    auto simd_obj = simd<DataT, NumElems>();
+    simd<DataT, NumElems> simd_obj;
     simd_obj.copy_from(ref_data);
     auto logical_not_result = !simd_obj;
 
