@@ -12,7 +12,11 @@
 // "XREQUIRES".
 // UNSUPPORTED: cuda, hip
 // RUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
-// RUN: %GPU_RUN_PLACEHOLDER %t.out
+// XRUN: %GPU_RUN_PLACEHOLDER %t.out
+// RUN: false
+// XFAIL: *
+// TODO This test freezed on Linux OS, remove XFAIL once this issue will be
+// fixed.
 //
 // Test for simd logical not operator.
 // The test creates source simd instance with reference data and invokes logical
