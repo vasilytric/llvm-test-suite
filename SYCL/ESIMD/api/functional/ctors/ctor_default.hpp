@@ -86,6 +86,8 @@ template <typename DataT, typename SizeT, typename TestCaseT> struct run_test {
     // checking the result of the simd calling because values of the constructed
     // object's elements are undefined.
     shared_vector<DataT> result(NumElems, shared_allocator<DataT>(queue));
+    // We do not re-throw an exception to test all combinations of types and
+    // vector sizes.
     try {
       queue.submit([&](sycl::handler &cgh) {
         DataT *const out = result.data();
