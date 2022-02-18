@@ -114,9 +114,10 @@ struct overal {
   // not a native type in Intel GPUs. So 16 is not driven by any type, but
   // rather the "oword alignment" requirement for all block loads. In that
   // sense, std::max_align_t would give wrong idea.
-  template <typename, int> static size_t get_size() { return alignof(16); }
+  static constexpr int oword_align = 16;
+  template <typename, int> static size_t get_size() { return oword_align; }
 
-  static constexpr auto get_value() { return overaligned<alignof(16)>; }
+  static constexpr auto get_value() { return overaligned<oword_align>; }
 };
 
 } // namespace alignment
