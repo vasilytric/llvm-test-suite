@@ -82,7 +82,7 @@ template <typename DataT, typename SizeT, typename TestCaseT> struct run_test {
   bool operator()(sycl::queue &queue, const std::string &data_type) {
     bool passed = true;
 
-    // We leave this dou to avoiding empty functions optimisation, we do not
+    // We use it to avoid empty functions being optimized out by compiler
     // checking the result of the simd calling because values of the constructed
     // object's elements are undefined.
     shared_vector<DataT> result(NumElems, shared_allocator<DataT>(queue));
