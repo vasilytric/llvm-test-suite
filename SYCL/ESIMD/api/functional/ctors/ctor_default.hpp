@@ -81,27 +81,26 @@ template <typename DataT, typename SizeT, typename TestCaseT> struct run_test {
 
   bool operator()(sycl::queue &queue, const std::string &data_type) {
     bool passed = true;
-    DataT default_val{};
 
+    // We leave this dou to avoiding empty functions optimisation, we do not
+    // checking the result of the simd calling because values of the constructed
+    // object's elements are undefined.
     shared_vector<DataT> result(NumElems, shared_allocator<DataT>(queue));
-
-    queue.submit([&](sycl::handler &cgh) {
-      DataT *const out = result.data();
-      cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
-          [=]() SYCL_ESIMD_KERNEL {
-            TestCaseT::template call_simd_ctor<DataT, NumElems>(out);
-          });
-    });
-
-    for (size_t i = 0; i < result.size(); ++i) {
-      if (result[i] != default_val) {
-        passed = false;
-
-        const auto description =
-            ctors::TestDescription<DataT, NumElems, TestCaseT>(
-                i, result[i], default_val, data_type);
-        log::fail(description);
-      }
+    try {
+      queue.submit([&](sycl::handler &cgh) {
+        DataT *const out = result.data();
+        cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
+            [=]() SYCL_ESIMD_KERNEL {
+              TestCaseT::template call_simd_ctor<DataT, NumElems>(out);
+            });
+      });
+      queue.wait_and_throw();
+    } catch (const sycl::exception &e) {
+      passed = false;
+      std::string error_msg =
+          "a SYCL exception was caught: " + std::string(e.what());
+      error_msg += ", with context: " + TestCaseT::get_description();
+      log::note(error_msg);
     }
 
     return passed;
