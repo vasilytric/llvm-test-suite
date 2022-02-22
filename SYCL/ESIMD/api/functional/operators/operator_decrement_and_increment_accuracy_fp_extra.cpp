@@ -1,4 +1,5 @@
-//==------- operator_logical_not.cpp  - DPC++ ESIMD on-device test ---------==//
+//==------- operator_decrement_and_increment_accuracy_fp_extra.cpp  - DPC++
+//          ESIMD on-device test -------------------------------------------==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
