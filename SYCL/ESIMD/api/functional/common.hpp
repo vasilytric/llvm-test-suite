@@ -57,16 +57,6 @@ using shared_vector = std::vector<DataT, shared_allocator<DataT>>;
 
 // Provides verification that provided device has necessary aspects to interact
 // with current data type.
-//
-// Usage example:
-//
-// sycl::device device = queue.get_device();
-// if (should_skip_test_with(device)) {
-//   return true;
-// }
-//
-// ** do test actions **
-//
 template <typename T>
 inline bool should_skip_test_with(const sycl::device &device) {
   if constexpr (std::is_same_v<T, sycl::half>) {
