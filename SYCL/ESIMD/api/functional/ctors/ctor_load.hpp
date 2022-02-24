@@ -111,7 +111,7 @@ struct overal {
   static constexpr int oword_align = 16;
   template <typename, int> static size_t get_size() { return oword_align; }
 
-  static constexpr auto get_value() { return overaligned<oword_align>; }
+  static constexpr auto get_value() { return esimd::overaligned<oword_align>; }
 };
 
 } // namespace alignment
