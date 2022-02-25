@@ -7,9 +7,14 @@
 //
 //===----------------------------------------------------------------------===//
 // REQUIRES: gpu
-// UNSUPPORTED: cuda || hip
+// UNSUPPORTED: gpu-intel-dg1,cuda,hip
+// TODO: esimd_emulator fails due to unimplemented 'raw_send' intrinsic
+// XFAIL: esimd_emulator
 // RUN: %clangxx -fsycl %s -o %t.out
 // RUN: %GPU_RUN_PLACEHOLDER %t.out
+
+// The test checks raw send functionality with block read/write implementation
+// on SKL. It does not work on DG1 due to send instruction incompatibility.
 
 #include "esimd_test_utils.hpp"
 

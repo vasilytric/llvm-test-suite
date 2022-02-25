@@ -8,7 +8,6 @@
 // REQUIRES: gpu
 // UNSUPPORTED: cuda || hip
 // RUN: %clangxx -fsycl %s -o %t.out
-// RUN: %HOST_RUN_PLACEHOLDER %t.out
 // RUN: %GPU_RUN_PLACEHOLDER %t.out
 
 // Regression test for SVM gather/scatter API.
@@ -91,6 +90,10 @@ int main(void) {
   Pass &= test<int32_t, 8>(Q);
   Pass &= test<int32_t, 16>(Q);
   Pass &= test<int32_t, 32>(Q);
+
+  Pass &= test<half, 8>(Q);
+  Pass &= test<half, 16>(Q);
+  Pass &= test<half, 32>(Q);
 
   std::cout << (Pass ? "Test Passed\n" : "Test FAILED\n");
   return Pass ? 0 : 1;
