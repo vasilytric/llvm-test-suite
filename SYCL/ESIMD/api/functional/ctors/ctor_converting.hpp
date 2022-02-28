@@ -130,8 +130,13 @@ private:
         // https://github.com/microsoft/STL/issues/519
         if (!std::isnan(expected) && !std::isnan(retrieved)) {
           if (expected != retrieved) {
-            passed =
-                fail_test(i, retrieved, expected, src_data_type, dst_data_type);
+            if (!((expected + value<DstT>::pos_ulp(expected)) >= retrieved ||
+                  (expected - value<DstT>::pos_ulp(expected)) >= retrieved ||
+                  (expected + value<DstT>::pos_ulp(expected)) <= retrieved ||
+                  (expected - value<DstT>::pos_ulp(expected)) <= retrieved)) {
+              passed = fail_test(i, retrieved, expected, src_data_type,
+                                 dst_data_type);
+            }
           }
         }
       } else {
