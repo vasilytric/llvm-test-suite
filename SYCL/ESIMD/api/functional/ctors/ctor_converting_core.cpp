@@ -33,13 +33,30 @@ int main(int, char **) {
 
   bool passed = true;
 
-  const auto types = get_tested_types<tested_types::fp>();
-  const auto single_dim = values_pack<8>();
+  const auto fp_types = get_tested_types<tested_types::fp>();
+  const auto uint_types = get_tested_types<tested_types::uint>();
+  const auto sint_types = get_tested_types<tested_types::sint>();
+  const auto core_types = get_tested_types<tested_types::core>();
+  const auto single_size = get_sizes<8>();
 
   // Run for specific combinations of types, vector length, base and step values
   // and invocation contexts.
-  ctors::run_test<float, 8, double, ctors::initializer>{}(queue, "float",
-                                                          "double");
+  // The first types is the source types. the second types is the destination
+  // types.
+  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
+      fp_types, single_size, fp_types, queue);
+  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
+      fp_types, single_size, uint_types, queue);
+  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
+      fp_types, single_size, sint_types, queue);
+  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
+      uint_types, single_size, core_types, queue);
+  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
+      sint_types, single_size, uint_types, queue);
+  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
+      sint_types, single_size, sint_types, queue);
+  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
+      sint_types, single_size, fp_types, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

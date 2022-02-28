@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "../value_conv.hpp"
 #include "common.hpp"
 
 namespace esimd = sycl::ext::intel::experimental::esimd;
@@ -71,8 +72,9 @@ private:
 template <typename, int, typename> class Kernel;
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
-template <typename SrcT, int NumElems, typename DstT, typename TestCaseT>
+template <typename TestCaseT, typename SrcT, typename DimT, typename DstT>
 class run_test {
+  static constexpr int NumElems = DimT::value;
 
 public:
   bool operator()(sycl::queue &queue, const std::string &src_data_type,
@@ -120,7 +122,6 @@ private:
     queue.wait_and_throw();
 
     for (size_t i = 0; i < result.size(); ++i) {
-
       const DstT &expected = static_cast<DstT>(ref_data[i]);
       const DstT &retrieved = result[i];
       if constexpr (type_traits::is_sycl_floating_point_v<DstT>) {
@@ -130,13 +131,13 @@ private:
         if (!std::isnan(expected) && !std::isnan(retrieved)) {
           if (expected != retrieved) {
             passed =
-                fail_test(i, expected, retrieved, src_data_type, dst_data_type);
+                fail_test(i, retrieved, expected, src_data_type, dst_data_type);
           }
         }
       } else {
         if (expected != retrieved) {
           passed =
-              fail_test(i, expected, retrieved, src_data_type, dst_data_type);
+              fail_test(i, retrieved, expected, src_data_type, dst_data_type);
         }
       }
     }
@@ -144,7 +145,7 @@ private:
     return passed;
   }
 
-  bool fail_test(size_t index, SrcT retrieved, SrcT expected,
+  bool fail_test(size_t index, DstT retrieved, DstT expected,
                  const std::string &src_data_type,
                  const std::string &dst_data_type) {
     const auto description =
