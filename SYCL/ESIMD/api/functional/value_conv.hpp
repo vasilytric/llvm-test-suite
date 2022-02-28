@@ -83,7 +83,7 @@ std::vector<SrcT> generate_ref_conv_data() {
   } else if constexpr (type_traits::is_sycl_floating_point_v<SrcT> &&
                        type_traits::is_sycl_signed_v<DstT>) {
     ref_data = details::construct_ref_data<SrcT, NumElems>(
-        {-0.0, max, max_half, min, min_half});
+        {0.0, max, max_half, min, min_half});
   } else if constexpr (type_traits::is_sycl_signed_v<SrcT> &&
                        type_traits::is_sycl_signed_v<DstT>) {
     ref_data = details::construct_ref_data<SrcT, NumElems>(
