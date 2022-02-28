@@ -35,10 +35,10 @@ struct initializer {
   }
 };
 
-template <typename SrcT, typename DstT, int NumElems, typename ContextT>
+template <typename T, int NumElems, typename ContextT>
 class ConvCtorTestDescription : public ITestDescription {
 public:
-  ConvCtorTestDescription(size_t index, DstT retrieved_val, DstT expected_val,
+  ConvCtorTestDescription(size_t index, T retrieved_val, T expected_val,
                           const std::string &src_data_type,
                           const std::string &dst_data_type)
       : m_src_data_type(src_data_type), m_dst_data_type(dst_data_type),
@@ -64,8 +64,8 @@ public:
 private:
   const std::string m_src_data_type;
   const std::string m_dst_data_type;
-  const DstT m_retrieved_val;
-  const DstT m_expected_val;
+  const T m_retrieved_val;
+  const T m_expected_val;
   const size_t m_index;
 };
 
@@ -153,9 +153,8 @@ private:
   bool fail_test(size_t index, DstT retrieved, DstT expected,
                  const std::string &src_data_type,
                  const std::string &dst_data_type) {
-    const auto description =
-        ConvCtorTestDescription<SrcT, DstT, NumElems, TestCaseT>(
-            index, retrieved, expected, src_data_type, dst_data_type);
+    const auto description = ConvCtorTestDescription<DstT, NumElems, TestCaseT>(
+        index, retrieved, expected, src_data_type, dst_data_type);
     log::fail(description);
 
     return false;
