@@ -35,6 +35,61 @@ struct initializer {
   }
 };
 
+// Descriptor class for the case of calling constructor in variable declaration
+// context.
+struct var_decl {
+  static std::string get_description() { return "variable declaration"; }
+
+  template <typename SrcT, typename DstT, int NumElems>
+  static void call_simd_ctor(const SrcT *const ref_data, DstT *const out) {
+    esimd::simd<SrcT, NumElems> input_simd;
+    input_simd.copy_from(ref_data);
+
+    esimd::simd<DstT, NumElems> output_simd(input_simd);
+    output_simd.copy_to(out);
+  }
+};
+
+// Descriptor class for the case of calling constructor in rvalue in an
+// expression context.
+struct rval_in_expr {
+  static std::string get_description() { return "rvalue in an expression"; }
+
+  template <typename SrcT, typename DstT, int NumElems>
+  static void call_simd_ctor(const SrcT *const ref_data, DstT *const out) {
+    esimd::simd<SrcT, NumElems> input_simd;
+    input_simd.copy_from(ref_data);
+
+    esimd::simd<DstT, NumElems> output_simd;
+    output_simd = esimd::simd<DstT, NumElems>(input_simd);
+    output_simd.copy_to(out);
+  }
+};
+
+// Descriptor class for the case of calling constructor in const reference
+// context.
+class const_ref {
+public:
+  static std::string get_description() { return "const reference"; }
+
+  template <typename SrcT, typename DstT, int NumElems>
+  static void call_simd_ctor(const SrcT *const ref_data, DstT *const out) {
+    esimd::simd<SrcT, NumElems> input_simd;
+    input_simd.copy_from(ref_data);
+    call_simd_by_const_ref<SrcT, DstT, NumElems>(
+        esimd::simd<SrcT, NumElems>(input_simd), out);
+  }
+
+private:
+  template <typename SrcT, typename DstT, int NumElems>
+  static void
+  call_simd_by_const_ref(const esimd::simd<SrcT, NumElems> &simd_by_const_ref,
+                         DstT *out) {
+    esimd::simd<DstT, NumElems> output_simd = simd_by_const_ref;
+    output_simd.copy_to(out);
+  }
+};
+
 template <typename T, int NumElems, typename ContextT>
 class ConvCtorTestDescription : public ITestDescription {
 public:
@@ -69,10 +124,9 @@ private:
   const size_t m_index;
 };
 
-template <typename, int, typename> class Kernel;
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
-template <typename TestCaseT, typename SrcT, typename DimT, typename DstT>
+template <typename SrcT, typename DimT, typename DstT, typename TestCaseT>
 class run_test {
   static constexpr int NumElems = DimT::value;
 
@@ -115,21 +169,28 @@ private:
       const SrcT *const ref = shared_ref_data.data();
       DstT *const out = result.data();
 
-      cgh.single_task<Kernel<SrcT, NumElems, DstT>>([=]() SYCL_ESIMD_KERNEL {
-        TestCaseT::template call_simd_ctor<SrcT, DstT, NumElems>(ref, out);
-      });
+      cgh.single_task<Kernel<SrcT, NumElems, DstT, TestCaseT>>(
+          [=]() SYCL_ESIMD_KERNEL {
+            TestCaseT::template call_simd_ctor<SrcT, DstT, NumElems>(ref, out);
+          });
     });
     queue.wait_and_throw();
 
     for (size_t i = 0; i < result.size(); ++i) {
+      // We ensure there is no UB here by preparing appropriate reference
+      // values.
       const DstT &expected = static_cast<DstT>(ref_data[i]);
       const DstT &retrieved = result[i];
       if constexpr (type_traits::is_sycl_floating_point_v<DstT>) {
         // std::isnan() couldn't be called for integral types because it call is
         // ambiguous GitHub issue for that case:
         // https://github.com/microsoft/STL/issues/519
-        if (!std::isnan(expected) && !std::isnan(retrieved)) {
+        if (!std::isnan(expected) || !std::isnan(retrieved)) {
           if (expected != retrieved) {
+            // TODO add a function that will compare with defined accuracy
+            // taking into account the possibility of UB on border values.
+            // We don't have a such UB now because we are using 10f as maximum
+            // value.
             if (!((expected + value<DstT>::pos_ulp(expected)) >= retrieved ||
                   (expected - value<DstT>::pos_ulp(expected)) >= retrieved ||
                   (expected + value<DstT>::pos_ulp(expected)) <= retrieved ||

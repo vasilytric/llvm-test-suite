@@ -38,25 +38,28 @@ int main(int, char **) {
   const auto sint_types = get_tested_types<tested_types::sint>();
   const auto core_types = get_tested_types<tested_types::core>();
   const auto single_size = get_sizes<8>();
+  const auto contexts =
+      unnamed_type_pack<ctors::initializer, ctors::var_decl,
+                        ctors::rval_in_expr, ctors::const_ref>::generate();
 
   // Run for specific combinations of types, vector length, base and step values
   // and invocation contexts.
   // The first types is the source types. the second types is the destination
   // types.
-  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
-      fp_types, single_size, fp_types, queue);
-  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
-      fp_types, single_size, uint_types, queue);
-  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
-      fp_types, single_size, sint_types, queue);
-  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
-      uint_types, single_size, core_types, queue);
-  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
-      sint_types, single_size, uint_types, queue);
-  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
-      sint_types, single_size, sint_types, queue);
-  passed &= for_all_combinations<ctors::run_test, ctors::initializer>(
-      sint_types, single_size, fp_types, queue);
+  passed &= for_all_combinations<ctors::run_test>(fp_types, single_size,
+                                                  fp_types, contexts, queue);
+  passed &= for_all_combinations<ctors::run_test>(fp_types, single_size,
+                                                  uint_types, contexts, queue);
+  passed &= for_all_combinations<ctors::run_test>(fp_types, single_size,
+                                                  sint_types, contexts, queue);
+  passed &= for_all_combinations<ctors::run_test>(uint_types, single_size,
+                                                  core_types, contexts, queue);
+  passed &= for_all_combinations<ctors::run_test>(sint_types, single_size,
+                                                  uint_types, contexts, queue);
+  passed &= for_all_combinations<ctors::run_test>(sint_types, single_size,
+                                                  sint_types, contexts, queue);
+  passed &= for_all_combinations<ctors::run_test>(sint_types, single_size,
+                                                  fp_types, contexts, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
