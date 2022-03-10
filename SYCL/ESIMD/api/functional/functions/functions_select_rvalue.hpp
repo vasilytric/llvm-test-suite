@@ -68,6 +68,8 @@ class run_test {
 public:
   bool operator()(sycl::queue &queue, size_t offset,
                   const std::string &data_type) {
+    assert(NumElems >= NumSelectedElems * Stride + offset &&
+           "Offset should be less than number selected elements.");
 
     bool passed = true;
     size_t alignment_value = alignof(DataT);
