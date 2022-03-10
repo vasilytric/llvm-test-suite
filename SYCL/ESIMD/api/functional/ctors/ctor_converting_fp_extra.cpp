@@ -42,7 +42,7 @@ int main(int, char **) {
   const auto uint_types = get_tested_types<tested_types::uint>();
   const auto sint_types = get_tested_types<tested_types::sint>();
   const auto core_types = get_tested_types<tested_types::core>();
-  const auto single_size = get_sizes<8>();
+  const auto single_size = get_sizes<1, 8>();
   const auto contexts =
       unnamed_type_pack<ctors::initializer, ctors::var_decl,
                         ctors::rval_in_expr, ctors::const_ref>::generate();
