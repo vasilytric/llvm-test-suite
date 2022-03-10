@@ -1,4 +1,4 @@
-//===-- functions_select_rvalue.hpp - Functions for tests on simd rvalue select
+//===-- functions_1d_select.hpp - Functions for tests on simd rvalue select
 //      function. ---------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -64,6 +64,52 @@ struct select_rval {
         decltype(select_result),
         simd_view<esimd::simd<DataT, NumElems>,
                   region1d_t<DataT, NumSelectedElems, Stride>>>;
+  }
+};
+
+// Descriptor class for the case of calling simd<T,N>::select function.
+struct select_lval {
+  static std::string get_description() { return "select lvalue"; }
+
+  template <typename DataT, int NumElems, int NumSelectedElems, int Stride>
+  static bool call_operator(const DataT *const ref_1, const DataT *const ref_2,
+                            DataT *const out, size_t offset) {
+    simd<DataT, NumElems> src_simd_obj;
+    src_simd_obj.copy_from(ref_1);
+
+    simd<DataT, NumSelectedElems> dst_simd_obj;
+    dst_simd_obj.copy_from(ref_2);
+
+    src_simd_obj.template select<NumSelectedElems, Stride>(offset) =
+        dst_simd_obj;
+    src_simd_obj.copy_to(out);
+
+    return true;
+  }
+};
+
+// Descriptor class for the case of calling simd<T,N>::select function.
+struct select_simd_view {
+  static std::string get_description() { return "select simd view"; }
+
+  template <typename DataT, int NumElems, int NumSelectedElems, int Stride>
+  static bool call_operator(const DataT *const ref_1, const DataT *const ref_2,
+                            DataT *const out, size_t offset) {
+    simd<DataT, NumElems> src_simd_obj;
+    src_simd_obj.copy_from(ref_1);
+
+    auto simd_view_instance = src_simd_obj.template bit_cast_view<DataT>();
+
+    auto selected_elems =
+        simd_view_instance.template select<NumSelectedElems, Stride>(offset);
+
+    for (size_t i = 0; i < NumSelectedElems; ++i) {
+      selected_elems[i] = ref_2[i];
+    }
+
+    src_simd_obj.copy_to(out);
+
+    return true;
   }
 };
 
@@ -179,7 +225,7 @@ private:
   }
 };
 
-template <tested_types TestedTypes>
+template <tested_types TestedTypes, typename SelectT>
 bool run_test_for_types(sycl::queue &queue) {
   bool passed = true;
   constexpr int desired_simd_small_size = 1;
@@ -192,44 +238,42 @@ bool run_test_for_types(sycl::queue &queue) {
 
   const auto small_size = get_dimensions<desired_simd_small_size>();
   const auto great_size = get_dimensions<desired_simd_large_size>();
-  const auto all_types = get_tested_types<TestedTypes>();
+  const auto types = get_tested_types<TestedTypes>();
 
   // Checks are run for specific combinations of types, sizes, strides and
   // offsets.
   passed &=
-      for_all_combinations<run_test, select_rval, size_type<1>, stride_type<1>,
-                           offset_type<zero_offset_value>>(all_types,
-                                                           small_size, queue);
+      for_all_combinations<run_test, SelectT, size_type<1>, stride_type<1>,
+                           offset_type<zero_offset_value>>(types, small_size,
+                                                           queue);
   passed &=
-      for_all_combinations<run_test, select_rval, size_type<1>, stride_type<1>,
-                           offset_type<zero_offset_value>>(all_types,
-                                                           small_size, queue);
+      for_all_combinations<run_test, SelectT, size_type<1>, stride_type<1>,
+                           offset_type<zero_offset_value>>(types, small_size,
+                                                           queue);
   passed &= for_all_combinations<
-      run_test, select_rval,
+      run_test, SelectT,
       size_type<desired_simd_large_size / coefficient_of_division>,
       stride_type<coefficient_of_division>, offset_type<zero_offset_value>>(
-      all_types, great_size, queue);
+      types, great_size, queue);
   passed &= for_all_combinations<
-      run_test, select_rval,
+      run_test, SelectT,
       size_type<desired_simd_large_size / coefficient_of_division>,
-      stride_type<3>, offset_type<zero_offset_value>>(all_types, great_size,
-                                                      queue);
+      stride_type<3>, offset_type<zero_offset_value>>(types, great_size, queue);
   passed &= for_all_combinations<
-      run_test, select_rval, size_type<3>,
+      run_test, SelectT, size_type<3>,
       stride_type<desired_simd_large_size / coefficient_of_division>,
-      offset_type<zero_offset_value>>(all_types, great_size, queue);
+      offset_type<zero_offset_value>>(types, great_size, queue);
 
   passed &= for_all_combinations<
-      run_test, select_rval,
+      run_test, SelectT,
       size_type<desired_simd_large_size - small_offset_value>,
       stride_type<desired_simd_small_size>, offset_type<small_offset_value>>(
-      all_types, great_size, queue);
-
+      types, great_size, queue);
   passed &=
-      for_all_combinations<run_test, select_rval,
+      for_all_combinations<run_test, SelectT,
                            size_type<desired_simd_large_size / 3>,
                            stride_type<2>, offset_type<large_offset_value>>(
-          all_types, great_size, queue);
+          types, great_size, queue);
 
   return passed;
 }

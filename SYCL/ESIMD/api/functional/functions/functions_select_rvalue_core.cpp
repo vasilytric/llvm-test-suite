@@ -15,13 +15,13 @@
 // RUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
 // RUN: %GPU_RUN_PLACEHOLDER %t.out
 //
-// Test for simd select function.
-// The test creates source simd instance with reference data and invokes logical
-// not operator, using core data types.
+// Test for simd rvalue select function.
+// The test creates source simd instance with reference data and then calls
+// rvalue select function.
 // The test verifies that selected values can be changed with avoid to change
 // values, that hasn't beed selected.
 
-#include "functions_select_rvalue.hpp"
+#include "functions_1d_select.hpp"
 
 using namespace sycl::ext::intel::experimental::esimd;
 using namespace esimd_test::api::functional;
@@ -31,7 +31,8 @@ int main(int, char **) {
                     esimd_test::createExceptionHandler());
 
   bool passed =
-      functions::run_test_for_types<tested_types::core>(queue);
+      functions::run_test_for_types<tested_types::core, functions::select_rval>(
+          queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
