@@ -30,6 +30,7 @@ int main(int, char **) {
                     esimd_test::createExceptionHandler());
 
   bool passed = true;
+
   const auto types = get_tested_types<tested_types::core>();
   const auto sizes = get_all_sizes();
 
@@ -37,8 +38,8 @@ int main(int, char **) {
       unnamed_type_pack<ctors::initializer, ctors::var_decl,
                         ctors::rval_in_expr, ctors::const_ref>::generate();
   const auto alignments =
-      unnamed_type_pack<ctors::alignment::element, ctors::alignment::vector,
-                        ctors::alignment::overal>::generate();
+      named_type_pack<ctors::alignment::element, ctors::alignment::vector,
+                      ctors::alignment::overal>::generate();
 
   passed &= for_all_combinations<ctors::run_test>(types, sizes, contexts,
                                                   alignments, queue);

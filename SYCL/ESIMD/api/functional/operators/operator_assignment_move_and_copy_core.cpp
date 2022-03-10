@@ -31,6 +31,8 @@ using namespace esimd_test::api::functional;
 struct move_assignment {
   static std::string get_description() { return "move assignment operator"; }
 
+  static constexpr bool is_move_expected() { return true; }
+
   template <typename DataT, int NumElems>
   static bool run(const DataT *const ref_data, DataT *const out) {
     simd<DataT, NumElems> source_simd;
@@ -38,13 +40,15 @@ struct move_assignment {
     simd<DataT, NumElems> simd_obj;
     simd_obj = std::move(source_simd);
     simd_obj.copy_to(out);
-    return simd_obj.get_test_proxy().was_move_destination() == true;
+    return simd_obj.get_test_proxy().was_move_destination();
   }
 };
 
 // Descriptor class for the case of calling copy assignment operator.
 struct copy_assignment {
   static std::string get_description() { return "copy assignment operator"; }
+
+  static constexpr bool is_move_expected() { return false; }
 
   template <typename DataT, int NumElems>
   static bool run(const DataT *const ref_data, DataT *const out) {
@@ -53,7 +57,7 @@ struct copy_assignment {
     simd<DataT, NumElems> simd_obj;
     simd_obj = source_simd;
     simd_obj.copy_to(out);
-    return simd_obj.get_test_proxy().was_move_destination() == false;
+    return simd_obj.get_test_proxy().was_move_destination();
   }
 };
 
@@ -63,14 +67,14 @@ int main(int, char **) {
 
   bool passed = true;
 
-  const auto types = get_tested_types<tested_types::core>();
-  const auto dims = get_all_dimensions();
+  const auto types = get_tested_types<tested_types::all>();
+  const auto all_sizes = get_all_sizes();
 
   const auto context =
       unnamed_type_pack<move_assignment, copy_assignment>::generate();
 
-  passed &=
-      for_all_combinations<operators::run_test>(types, dims, context, queue);
+  passed &= for_all_combinations<operators::run_test>(types, all_sizes, context,
+                                                      queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
