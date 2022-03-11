@@ -47,24 +47,37 @@ struct bitwise_not_operator {
   }
 };
 
-// Replace specific reference values to the bigger ones, so we can safely
-// substract `m_value` later.
-template <typename T> class For_bitwise_not {
-  T m_value;
-
-public:
+// Replace specific reference values to lower once.
+template <typename T> struct For_bitwise_not {
   For_bitwise_not() = default;
 
   void operator()(T &val) {
+    static_assert(!type_traits::is_sycl_floating_point_v<T>,
+                  "Invalid data type.");
     if constexpr (std::is_signed_v<T>) {
-      if (std::abs(value<T>::lowest() + 1) == (value<T>::max() - 1)) {
-        if (val == value<T>::max()) {
+      // We could have UB for negative zero in different integral type
+      // representations: two's complement, ones' complement and signed
+      // magnitude.
+      // See http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2218.htm
+      // Note that there is no check for UB with padding bits here, as it would
+      // effectively disable any possible check for signed integer bitwise
+      // operations.
+      static const T max = value<T>::max();
+      static const T lowest = value<T>::lowest();
+      if (std::abs(lowest + 1) == (max - 1)) {
+        // C11 standard mentions that it's possible to have a `0b100...0` value
+        // as a trap value for twos' complement representation. In such case the
+        // condition above would trigger for twos' complement representation
+        // also.
+        if (val == max) {
+          // Would result in trap representation for signed magnitude
           val -= 1;
         } else if (val == 0) {
+          // Would result in trap representation for ones' complement
           val = 1;
         }
       }
-    }
+    } //  signed integral types
   }
 };
 
