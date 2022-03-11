@@ -13,10 +13,11 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+#define ESIMD_TESTS_DISABLE_DEPRECATED_TEST_DESCRIPTION_FOR_LOGS
 
 #include "common.hpp"
 
-namespace esimd = sycl::ext::intel::experimental::esimd;
+namespace esimd = sycl::ext::intel::esimd;
 
 namespace esimd_test::api::functional::ctors {
 
@@ -78,30 +79,35 @@ struct const_ref {
 // Struct that calls simd in provided context and then verifies obtained result.
 template <typename DataT, typename SizeT, typename TestCaseT> struct run_test {
   static constexpr int NumElems = SizeT::value;
+  using TestDescriptionT = ctors::TestDescription<NumElems, TestCaseT>;
 
   bool operator()(sycl::queue &queue, const std::string &data_type) {
     bool passed = true;
-    DataT default_val{};
+    log::trace<TestDescriptionT>(data_type);
 
+    if (should_skip_test_with<DataT>(queue.get_device())) {
+      return true;
+    }
+
+    // We use it to avoid empty functions being optimized out by compiler
+    // checking the result of the simd calling because values of the constructed
+    // object's elements are undefined.
     shared_vector<DataT> result(NumElems, shared_allocator<DataT>(queue));
-
-    queue.submit([&](sycl::handler &cgh) {
-      DataT *const out = result.data();
-      cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
-          [=]() SYCL_ESIMD_KERNEL {
-            TestCaseT::template call_simd_ctor<DataT, NumElems>(out);
-          });
-    });
-
-    for (size_t i = 0; i < result.size(); ++i) {
-      if (result[i] != default_val) {
-        passed = false;
-
-        const auto description =
-            ctors::TestDescription<DataT, NumElems, TestCaseT>(
-                i, result[i], default_val, data_type);
-        log::fail(description);
-      }
+    // We do not re-throw an exception to test all combinations of types and
+    // vector sizes.
+    try {
+      queue.submit([&](sycl::handler &cgh) {
+        DataT *const out = result.data();
+        cgh.single_task<Kernel<DataT, NumElems, TestCaseT>>(
+            [=]() SYCL_ESIMD_KERNEL {
+              TestCaseT::template call_simd_ctor<DataT, NumElems>(out);
+            });
+      });
+      queue.wait_and_throw();
+    } catch (const sycl::exception &e) {
+      passed = false;
+      log::fail(TestDescriptionT(data_type), "A SYCL exception was caught: ",
+                e.what());
     }
 
     return passed;

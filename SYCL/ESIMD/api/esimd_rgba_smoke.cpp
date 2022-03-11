@@ -17,12 +17,12 @@
 #include "../esimd_test_utils.hpp"
 
 #include <CL/sycl.hpp>
-#include <sycl/ext/intel/experimental/esimd.hpp>
+#include <sycl/ext/intel/esimd.hpp>
 
 #include <iostream>
 
 using namespace cl::sycl;
-using namespace sycl::ext::intel::experimental::esimd;
+using namespace sycl::ext::intel::esimd;
 
 static constexpr unsigned NAllChs =
     get_num_channels_enabled(rgba_channel_mask::ABGR);
@@ -213,6 +213,8 @@ int main(void) {
   passed &= test<rgba_channel_mask::A>(q);
   passed &= test<rgba_channel_mask::R>(q);
   passed &= test<rgba_channel_mask::B>(q);
+  // TODO disabled due to a compiler bug:
+  //passed &= test<rgba_channel_mask::ABR>(q);
 
   std::cout << (passed ? "Test passed\n" : "Test FAILED\n");
   return passed ? 0 : 1;
