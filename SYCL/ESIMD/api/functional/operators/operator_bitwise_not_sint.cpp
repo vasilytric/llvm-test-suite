@@ -21,7 +21,8 @@
 // not operator, that bitwise not operator return type is as expected and
 // bitwise not operator result values is correct.
 //
-// IMPORTANT: there is possibility of trap values and compiler optimizations in
+// IMPORTANT: ESIMD API currently supports bitwise not for signed integer types.
+// Though there is possibility of trap values and compiler optimizations in
 // general C++17, the llvm itself states that signed integer types are
 // guaranteed to be two's complement:
 //  - https://llvm.org/docs/LangRef.html
@@ -41,7 +42,8 @@ int main(int, char **) {
   const auto all_dims = get_all_dimensions();
 
   // Running test for all sint types
-  passed &= for_all_combinations<run_test, bitwise_not_operator>(
+  passed &= for_all_combinations<operators::run_test,
+                                 operators::bitwise_not_operator>(
       sint_types, all_dims, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
