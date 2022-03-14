@@ -251,11 +251,10 @@ bool run_test_for_types(sycl::queue &queue) {
   const auto types =
       named_type_pack<short, unsigned short, int, unsigned int, long,
                       unsigned long, float, long long,
-                      unsigned long long>::generate("short",
-                                                    "unsigned short", "int",
-                                                    "unsigned int", "long",
-                                                    "unsigned long", "float",
-                                                    "long long",
+                      unsigned long long>::generate("short", "unsigned short",
+                                                    "int", "unsigned int",
+                                                    "long", "unsigned long",
+                                                    "float", "long long",
                                                     "unsigned long long");
 #endif
 
