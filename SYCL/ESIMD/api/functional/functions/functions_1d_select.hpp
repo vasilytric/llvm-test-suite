@@ -21,6 +21,8 @@
 #include <cmath>
 // for std::numeric_limits
 #include <limits>
+// for std::iota
+#include <numeric>
 
 namespace esimd_test::api::functional::functions {
 
@@ -31,7 +33,7 @@ constexpr int ceil(int a, int b) { return (a % b) > 0 ? a / b + 1 : a / b; }
 } // namespace details
 
 // Aliases to provide size or stride values to test.
-// This is the syntax sugar and they have the same type.
+// This is the syntax sugar just for code readability.
 template <int N> using stride_type = std::integral_constant<int, N>;
 template <int N> using size_type = std::integral_constant<int, N>;
 template <int N> using offset_type = std::integral_constant<int, N>;
@@ -44,15 +46,16 @@ struct select_rval {
   static std::string get_description() { return "select rvalue"; }
 
   template <typename DataT, int NumElems, int NumSelectedElems, int Stride>
-  static bool call_operator(const DataT *const ref_1, const DataT *const ref_2,
+  static bool call_operator(const DataT *const initial_data,
+                            const DataT *const data_for_change,
                             DataT *const out, size_t offset) {
     esimd::simd<DataT, NumElems> simd_obj;
-    simd_obj.copy_from(ref_1);
+    simd_obj.copy_from(initial_data);
     auto select_result =
         simd_obj.template select<NumSelectedElems, Stride>(offset);
 
     for (size_t i = 0; i < NumSelectedElems; ++i) {
-      select_result[i] = ref_2[i];
+      select_result[i] = data_for_change[i];
     }
     simd_obj.copy_to(out);
 
@@ -68,16 +71,17 @@ struct select_lval {
   static std::string get_description() { return "select lvalue"; }
 
   template <typename DataT, int NumElems, int NumSelectedElems, int Stride>
-  static bool call_operator(const DataT *const ref_1, const DataT *const ref_2,
+  static bool call_operator(const DataT *const initial_data,
+                            const DataT *const data_for_change,
                             DataT *const out, size_t offset) {
-    simd<DataT, NumElems> src_simd_obj;
-    src_simd_obj.copy_from(ref_1);
+    esimd::simd<DataT, NumElems> src_simd_obj;
+    src_simd_obj.copy_from(initial_data);
 
-    simd<DataT, NumSelectedElems> dst_simd_obj;
-    dst_simd_obj.copy_from(ref_2);
+    esimd::simd<DataT, NumSelectedElems> simd_for_change_values;
+    simd_for_change_values.copy_from(data_for_change);
 
     src_simd_obj.template select<NumSelectedElems, Stride>(offset) =
-        dst_simd_obj;
+        simd_for_change_values;
     src_simd_obj.copy_to(out);
 
     return true;
@@ -85,14 +89,15 @@ struct select_lval {
 };
 
 // Descriptor class for the case of calling simd<T,N>::select function.
-struct select_simd_view {
+struct select_simd_view_rval {
   static std::string get_description() { return "select simd view"; }
 
   template <typename DataT, int NumElems, int NumSelectedElems, int Stride>
-  static bool call_operator(const DataT *const ref_1, const DataT *const ref_2,
+  static bool call_operator(const DataT *const initial_data,
+                            const DataT *const data_for_change,
                             DataT *const out, size_t offset) {
-    simd<DataT, NumElems> src_simd_obj;
-    src_simd_obj.copy_from(ref_1);
+    esimd::simd<DataT, NumElems> src_simd_obj;
+    src_simd_obj.copy_from(initial_data);
 
     auto simd_view_instance = src_simd_obj.template bit_cast_view<DataT>();
 
@@ -100,7 +105,7 @@ struct select_simd_view {
         simd_view_instance.template select<NumSelectedElems, Stride>(offset);
 
     for (size_t i = 0; i < NumSelectedElems; ++i) {
-      selected_elems[i] = ref_2[i];
+      selected_elems[i] = data_for_change[i];
     }
 
     src_simd_obj.copy_to(out);
@@ -122,36 +127,30 @@ class run_test {
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
     static_assert(NumElems >= NumSelectedElems * Stride + Offset &&
-                  "Offset should be less than number selected elements.");
+                  "Number selected elements should be less than simd size.");
     bool passed = true;
     size_t alignment_value = alignof(DataT);
 
-    constexpr size_t value_for_increase_ref_data_for_fill = 50;
+    constexpr size_t value_for_increase_ref_data_for_change = 50;
     static_assert(std::numeric_limits<signed char>::max() >
-                      value_for_increase_ref_data_for_fill + NumElems,
-                  "Value that used for increase ref data for fill plus simd "
-                  "size should be less than char max value.");
+                  value_for_increase_ref_data_for_change + NumElems);
 
     shared_allocator<DataT> allocator(queue);
     shared_vector<DataT> result(NumElems, allocator);
     shared_vector<DataT> initial_ref_data(NumElems, allocator);
-    shared_vector<DataT> ref_data_for_fill(NumElems, allocator);
+    shared_vector<DataT> ref_data_for_change(NumElems, allocator);
 
     shared_element<bool> is_correct_type(queue, true);
 
-    for (size_t i = 0; i < NumElems; ++i) {
-      initial_ref_data[i] = i + 1;
-    }
+    std::iota(initial_ref_data.begin(), initial_ref_data.end(), 0);
     // We should have different values in the first reference data and in the
     // second reference data.
-    for (size_t i = 0; i < NumElems; ++i) {
-      ref_data_for_fill[i] =
-          initial_ref_data[i] + value_for_increase_ref_data_for_fill;
-    }
+    std::iota(ref_data_for_change.begin(), ref_data_for_change.end(),
+              initial_ref_data.back() + value_for_increase_ref_data_for_change);
 
     queue.submit([&](sycl::handler &cgh) {
       DataT *init_ref_ptr = initial_ref_data.data();
-      DataT *ref_data_for_fill_ptr = ref_data_for_fill.data();
+      DataT *ref_data_for_change_ptr = ref_data_for_change.data();
       DataT *const out_ptr = result.data();
       auto is_correct_type_ptr = is_correct_type.data();
 
@@ -161,40 +160,40 @@ public:
             *is_correct_type_ptr =
                 TestCaseT::template call_operator<DataT, NumElems,
                                                   NumSelectedElems, Stride>(
-                    init_ref_ptr, ref_data_for_fill_ptr, out_ptr, Offset);
+                    init_ref_ptr, ref_data_for_change_ptr, out_ptr, Offset);
           });
     });
     queue.wait_and_throw();
 
-    std::vector<size_t> selected_indexsess;
+    std::vector<size_t> selected_indexes;
     // Collect the indexess that has been selected.
     for (size_t i = Offset; i < Stride * NumSelectedElems + Offset;
          i += Stride) {
-      selected_indexsess.push_back(i);
+      selected_indexes.push_back(i);
     }
 
     // Push the largest value to avoid the following error: can't dereference
     // out of range vector iterator.
-    selected_indexsess.push_back(std::numeric_limits<size_t>::max());
-    auto selected_indexsess_ptr = selected_indexsess.begin();
+    selected_indexes.push_back(std::numeric_limits<size_t>::max());
+    auto next_selected_index = selected_indexes.begin();
 
     // Verify that values, that do not was selected has initial values.
     for (size_t i = 0; i < NumElems; ++i) {
       // If current index is less than selected index verify that this element
       // hasn't been selected and changed.
-      if (i < *selected_indexsess_ptr) {
-        DataT expected = initial_ref_data[i];
-        DataT retrieved = result[i];
+      if (i < *next_selected_index) {
+        const DataT &expected = initial_ref_data[i];
+        const DataT &retrieved = result[i];
         if (expected != retrieved) {
           passed = fail_test(i, expected, retrieved, data_type);
         }
       } else {
-        DataT expected = ref_data_for_fill[(i - Offset) / Stride];
-        DataT retrieved = result[i];
+        const DataT &expected = ref_data_for_change[(i - Offset) / Stride];
+        const DataT &retrieved = result[i];
         if (expected != retrieved) {
           passed = fail_test(i, expected, retrieved, data_type);
         }
-        selected_indexsess_ptr++;
+        next_selected_index++;
       }
     }
 

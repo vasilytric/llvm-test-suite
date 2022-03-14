@@ -1,5 +1,5 @@
-//==------- functions_select_simd_view_core.cpp  - DPC++ ESIMD on-device test
-//          ----------------------------------------------------------------==//
+//==------- functions_select_simd_view_rval_fp_extra.cpp  - DPC++ ESIMD
+//          on-device test -------------------------------------------------==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -31,8 +31,8 @@ int main(int, char **) {
                     esimd_test::createExceptionHandler());
 
   bool passed =
-      functions::run_test_for_types<tested_types::core,
-                                    functions::select_simd_view>(queue);
+      functions::run_test_for_types<tested_types::fp_extra,
+                                    functions::select_simd_view_rval>(queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
