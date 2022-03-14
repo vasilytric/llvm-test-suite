@@ -32,12 +32,6 @@ constexpr int ceil(int a, int b) { return (a % b) > 0 ? a / b + 1 : a / b; }
 
 } // namespace details
 
-// Aliases to provide size or stride values to test.
-// This is the syntax sugar just for code readability.
-template <int N> using stride_type = std::integral_constant<int, N>;
-template <int N> using size_type = std::integral_constant<int, N>;
-template <int N> using offset_type = std::integral_constant<int, N>;
-
 using use_offset = std::true_type;
 using do_not_use_offset = std::true_type;
 
@@ -218,6 +212,25 @@ private:
   }
 };
 
+// Aliases to provide size or stride values to test.
+// This is the syntax sugar just for code readability.
+template <int N> using stride_type = std::integral_constant<int, N>;
+template <int N> using size_type = std::integral_constant<int, N>;
+template <int N> using offset_type = std::integral_constant<int, N>;
+
+template <typename SelectT, int NumSelectedElems, int Stride, int Offset,
+          typename... T, int... Values>
+bool run_with_size_stride_offset(
+    sycl::queue &queue, const named_type_pack<T...> &types,
+    const unnamed_type_pack<std::integral_constant<int, Values>...> &sizes) {
+  bool passed =
+      for_all_combinations<run_test, SelectT, size_type<NumSelectedElems>,
+                           stride_type<Stride>, offset_type<Offset>>(
+          types, sizes, queue);
+
+  return passed;
+}
+
 template <tested_types TestedTypes, typename SelectT>
 bool run_test_for_types(sycl::queue &queue) {
   bool passed = true;
@@ -235,38 +248,31 @@ bool run_test_for_types(sycl::queue &queue) {
 
   // Checks are run for specific combinations of types, sizes, strides and
   // offsets.
-  passed &=
-      for_all_combinations<run_test, SelectT, size_type<1>, stride_type<1>,
-                           offset_type<zero_offset_value>>(types, small_size,
-                                                           queue);
-  passed &=
-      for_all_combinations<run_test, SelectT, size_type<1>, stride_type<1>,
-                           offset_type<zero_offset_value>>(types, small_size,
-                                                           queue);
-  passed &= for_all_combinations<
-      run_test, SelectT,
-      size_type<desired_simd_large_size / coefficient_of_division>,
-      stride_type<coefficient_of_division>, offset_type<zero_offset_value>>(
-      types, great_size, queue);
-  passed &= for_all_combinations<
-      run_test, SelectT,
-      size_type<desired_simd_large_size / coefficient_of_division>,
-      stride_type<3>, offset_type<zero_offset_value>>(types, great_size, queue);
-  passed &= for_all_combinations<
-      run_test, SelectT, size_type<3>,
-      stride_type<desired_simd_large_size / coefficient_of_division>,
-      offset_type<zero_offset_value>>(types, great_size, queue);
+  passed &= run_with_size_stride_offset<SelectT, 1, 1, zero_offset_value>(
+      queue, types, small_size);
 
-  passed &= for_all_combinations<
-      run_test, SelectT,
-      size_type<desired_simd_large_size - small_offset_value>,
-      stride_type<desired_simd_small_size>, offset_type<small_offset_value>>(
-      types, great_size, queue);
+  passed &= run_with_size_stride_offset<
+      SelectT, desired_simd_large_size / coefficient_of_division,
+      coefficient_of_division, zero_offset_value>(queue, types, great_size);
+
+  passed &= run_with_size_stride_offset<
+      SelectT, desired_simd_large_size / coefficient_of_division,
+      coefficient_of_division, zero_offset_value>(queue, types, great_size);
+
+  passed &= run_with_size_stride_offset<
+      SelectT, coefficient_of_division,
+      desired_simd_large_size / coefficient_of_division, zero_offset_value>(
+      queue, types, great_size);
+
   passed &=
-      for_all_combinations<run_test, SelectT,
-                           size_type<desired_simd_large_size / 3>,
-                           stride_type<2>, offset_type<large_offset_value>>(
-          types, great_size, queue);
+      run_with_size_stride_offset<SelectT,
+                                  desired_simd_large_size - small_offset_value,
+                                  desired_simd_small_size, small_offset_value>(
+          queue, types, great_size);
+
+  passed &= run_with_size_stride_offset<
+      SelectT, desired_simd_large_size / coefficient_of_division, 2,
+      large_offset_value>(queue, types, great_size);
 
   return passed;
 }
