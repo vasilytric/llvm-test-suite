@@ -123,9 +123,12 @@ class run_test {
   static constexpr int NumSelectedElems = NumSelectedElemsT::value;
   static constexpr int Stride = StrideT::value;
   static constexpr int Offset = OffsetT::value;
+  using TestDescriptionT =
+      TestDescription<NumElems, NumSelectedElems, Stride, Offset, TestCaseT>;
 
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
+    log::trace<TestDescriptionT>(data_type);
     static_assert(NumElems >= NumSelectedElems * Stride + Offset &&
                   "Number selected elements should be less than simd size.");
     bool passed = true;
@@ -199,10 +202,7 @@ public:
 
     if (!is_correct_type.value()) {
       passed = false;
-      log::print_line("Test failed due to type of the object that returns " +
-                      TestCaseT::get_description() +
-                      " operator is not equal to the expected one for simd<" +
-                      data_type + ", " + std::to_string(NumElems) + ">.");
+      log::fail(TestDescriptionT(data_type), "Unexpected return type.");
     }
 
     return passed;
@@ -211,10 +211,8 @@ public:
 private:
   bool fail_test(size_t i, DataT expected, DataT retrieved,
                  const std::string &data_type) {
-    log::fail(TestDescription<NumElems, TestCaseT>(data_type),
-              "Unexpected value at index ", i, ", retrieved: ", retrieved,
-              ", expected: ", expected, ", with size: ", NumSelectedElems,
-              ", stride: ", Stride, ", offset: ", Offset);
+    log::fail(TestDescriptionT(data_type), "Unexpected value at index ", i,
+              ", retrieved: ", retrieved, ", expected: ", expected);
 
     return false;
   }
