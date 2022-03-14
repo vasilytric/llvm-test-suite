@@ -244,7 +244,20 @@ bool run_test_for_types(sycl::queue &queue) {
 
   const auto small_size = get_dimensions<desired_simd_small_size>();
   const auto great_size = get_dimensions<desired_simd_large_size>();
+
+#if SIMD_RUN_TEST_WITH_CHAR_TYPES
   const auto types = get_tested_types<TestedTypes>();
+#else
+  const auto types =
+      named_type_pack<short, unsigned short, int, unsigned int, long,
+                      unsigned long, float, long long,
+                      unsigned long long>::generate("short",
+                                                    "unsigned short", "int",
+                                                    "unsigned int", "long",
+                                                    "unsigned long", "float",
+                                                    "long long",
+                                                    "unsigned long long");
+#endif
 
   // Checks are run for specific combinations of types, sizes, strides and
   // offsets.

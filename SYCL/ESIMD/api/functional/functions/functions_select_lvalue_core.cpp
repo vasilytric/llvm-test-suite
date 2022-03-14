@@ -15,6 +15,9 @@
 // RUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
 // RUN: %GPU_RUN_PLACEHOLDER %t.out
 //
+// TODO simd<char, 16> fills with unexpected values. The
+// SIMD_RUN_TEST_WITH_CHAR_TYPES macros must be enabled when it is resolved.
+//
 // Test for simd lvalue select function.
 // The test creates source simd instance with reference data and then calls
 // lvalue select function.
