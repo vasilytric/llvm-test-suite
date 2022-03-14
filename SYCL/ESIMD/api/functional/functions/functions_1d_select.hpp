@@ -22,8 +22,6 @@
 // for std::numeric_limits
 #include <limits>
 
-namespace esimd = sycl::ext::intel::experimental::esimd;
-
 namespace esimd_test::api::functional::functions {
 
 namespace details {
