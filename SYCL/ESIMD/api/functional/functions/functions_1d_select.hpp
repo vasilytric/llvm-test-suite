@@ -84,7 +84,7 @@ struct select_lval {
 
 // Descriptor class for the case of calling simd<T,N>::select function.
 struct select_simd_view_rval {
-  static std::string get_description() { return "select simd view"; }
+  static std::string get_description() { return "select simd view rvalue"; }
 
   template <typename DataT, int NumElems, int NumSelectedElems, int Stride>
   static bool call_operator(const DataT *const initial_data,
