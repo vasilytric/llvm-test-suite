@@ -160,7 +160,8 @@ private:
 
     if (!is_correct_type.value()) {
       passed = false;
-      log::fail(TestDescriptionT(data_type), "Invalid return type for operator.");
+      log::fail(TestDescriptionT(data_type),
+                "Invalid return type for operator.");
     }
 
     return passed;
