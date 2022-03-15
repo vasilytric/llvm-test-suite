@@ -55,8 +55,8 @@ struct select_rval {
 
     return std::is_same_v<
         decltype(select_result),
-        simd_view<esimd::simd<DataT, NumElems>,
-                  region1d_t<DataT, NumSelectedElems, Stride>>>;
+        esimd::simd_view<esimd::simd<DataT, NumElems>,
+                         esimd::region1d_t<DataT, NumSelectedElems, Stride>>>;
   }
 };
 
