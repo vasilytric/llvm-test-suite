@@ -26,7 +26,9 @@ namespace esimd_test::api::functional::functions {
 
 namespace details {
 
-constexpr int ceil(int a, int b) { return (a % b) > 0 ? a / b + 1 : a / b; }
+constexpr int ceil(int a, int b) {
+  return ((a % b) > 0) ? (a / b + 1) : (a / b);
+}
 
 } // namespace details
 
@@ -217,14 +219,12 @@ template <int N> using size_type = std::integral_constant<int, N>;
 template <int N> using offset_type = std::integral_constant<int, N>;
 
 template <typename SelectT, int NumSelectedElems, int Stride, int Offset,
-          typename... T, int... Values>
-bool run_with_size_stride_offset(
-    sycl::queue &queue, const named_type_pack<T...> &types,
-    const unnamed_type_pack<std::integral_constant<int, Values>...> &sizes) {
+          typename... ArgsT>
+bool run_with_size_stride_offset(ArgsT &&...args) {
   bool passed =
       for_all_combinations<run_test, SelectT, size_type<NumSelectedElems>,
                            stride_type<Stride>, offset_type<Offset>>(
-          types, sizes, queue);
+          std::forward<ArgsT>(args)...);
 
   return passed;
 }
@@ -259,30 +259,30 @@ bool run_test_for_types(sycl::queue &queue) {
   // Checks are run for specific combinations of types, sizes, strides and
   // offsets.
   passed &= run_with_size_stride_offset<SelectT, 1, 1, zero_offset_value>(
-      queue, types, small_size);
+      types, small_size, queue);
 
   passed &= run_with_size_stride_offset<
       SelectT, desired_simd_large_size / coefficient_of_division,
-      coefficient_of_division, zero_offset_value>(queue, types, great_size);
+      coefficient_of_division, zero_offset_value>(types, great_size, queue);
 
   passed &= run_with_size_stride_offset<
       SelectT, desired_simd_large_size / coefficient_of_division,
-      coefficient_of_division, zero_offset_value>(queue, types, great_size);
+      coefficient_of_division, zero_offset_value>(types, great_size, queue);
 
   passed &= run_with_size_stride_offset<
       SelectT, coefficient_of_division,
       desired_simd_large_size / coefficient_of_division, zero_offset_value>(
-      queue, types, great_size);
+      types, great_size, queue);
 
   passed &=
       run_with_size_stride_offset<SelectT,
                                   desired_simd_large_size - small_offset_value,
                                   desired_simd_small_size, small_offset_value>(
-          queue, types, great_size);
+          types, great_size, queue);
 
   passed &= run_with_size_stride_offset<
       SelectT, desired_simd_large_size / coefficient_of_division, 2,
-      large_offset_value>(queue, types, great_size);
+      large_offset_value>(types, great_size, queue);
 
   return passed;
 }
