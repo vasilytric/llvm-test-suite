@@ -17,8 +17,6 @@
 #include "../shared_element.hpp"
 #include "common.hpp"
 
-// for std::ceil
-#include <cmath>
 // for std::numeric_limits
 #include <limits>
 // for std::iota
