@@ -19,7 +19,7 @@
 // not operator.
 // The test verifies that data from simd is not corrupted after calling bitwise
 // not operator, that bitwise not operator return type is as expected and
-// bitwise not operator result values is correct.
+// bitwise not operator result values are correct.
 //
 // IMPORTANT: ESIMD API currently supports bitwise not for signed integer types.
 // Though there is possibility of trap values and compiler optimizations in

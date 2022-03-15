@@ -36,7 +36,7 @@ struct bitwise_not_operator {
                             DataT *const operator_result) {
     auto simd_obj = esimd::simd<DataT, NumElems>();
     simd_obj.copy_from(ref_data);
-    auto bitwise_not_result = ~simd_obj;
+    const auto bitwise_not_result = ~simd_obj;
     simd_obj.copy_to(source_simd_result);
     bitwise_not_result.copy_to(operator_result);
     return std::is_same_v<decltype(~simd_obj), esimd::simd<DataT, NumElems>>;
@@ -137,31 +137,30 @@ private:
 
     for (size_t i = 0; i < NumElems; ++i) {
       {
-        DataT retrieved = source_simd_result[i];
-        DataT expected = ref_data[i];
+        const DataT &retrieved = source_simd_result[i];
+        const DataT &expected = ref_data[i];
         if (!are_bitwise_equal(expected, retrieved)) {
           passed = false;
-          log::fail(TestDescriptionT(data_type), "Unexpected value at index ",
-                    i, ", retrieved: ", retrieved, ", expected: ", expected);
+          log::fail(TestDescriptionT(data_type),
+                    "Unexpected source simd value value at index ", i,
+                    ", retrieved: ", retrieved, ", expected: ", expected);
         }
       }
       {
-        DataT retrieved = operator_result[i];
-        DataT expected = ~shared_ref_data[i];
+        const DataT &retrieved = operator_result[i];
+        const DataT &expected = ~shared_ref_data[i];
         if (!are_bitwise_equal(expected, retrieved)) {
           passed = false;
-          log::fail(TestDescriptionT(data_type), "Unexpected value at index ",
-                    i, ", retrieved: ", retrieved, ", expected: ", expected);
+          log::fail(TestDescriptionT(data_type),
+                    "Unexpected result value at index ", i,
+                    ", retrieved: ", retrieved, ", expected: ", expected);
         }
       }
     }
 
     if (!is_correct_type.value()) {
       passed = false;
-      log::print_line("Test failed due to type of the object that returns " +
-                      TestCaseT::get_description() +
-                      " operator is not equal to the expected one for simd<" +
-                      data_type + ", " + std::to_string(NumElems) + ">.");
+      log::fail(TestDescriptionT(data_type), "Invalid return type for operator.");
     }
 
     return passed;
