@@ -142,7 +142,7 @@ private:
         if (!are_bitwise_equal(expected, retrieved)) {
           passed = false;
           log::fail(TestDescriptionT(data_type),
-                    "Unexpected source simd value value at index ", i,
+                    "Unexpected source simd value at index ", i,
                     ", retrieved: ", retrieved, ", expected: ", expected);
         }
       }
