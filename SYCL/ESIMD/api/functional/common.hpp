@@ -55,7 +55,9 @@ using shared_allocator = sycl::usm_allocator<DataT, sycl::usm::alloc::shared>;
 template <typename DataT>
 using shared_vector = std::vector<DataT, shared_allocator<DataT>>;
 
-constexpr int ceil(int a, int b) {
+// Divides a on b and returns integer value not less than result of division
+// given remainder.
+constexpr int round_up_int_division(int a, int b) {
   return ((a % b) > 0) ? (a / b + 1) : (a / b);
 }
 
