@@ -19,21 +19,16 @@ namespace esimd_test::api::functional::functions {
 
 namespace esimd = sycl::ext::intel::esimd;
 
-template <int NumElems, int NumSelectedElems, int Stride, int Offset,
-          typename ContextT>
+template <int NumElems, typename TestCaseT>
 class TestDescription : public ITestDescription {
 public:
   TestDescription(const std::string &data_type) : m_data_type(data_type) {}
 
   std::string to_string() const override {
-    std::string test_description("simd<");
+    std::string test_description = TestCaseT::get_description();
 
-    test_description += m_data_type + ", " + std::to_string(NumElems) + ">";
-    test_description += ", with context: " + ContextT::get_description();
-    test_description +=
-        ", with size selected elems: " + std::to_string(NumSelectedElems);
-    test_description += ", with stride: " + std::to_string(Stride);
-    test_description += ", with offset: " + std::to_string(Offset);
+    test_description += " with simd<" + m_data_type;
+    test_description += ", " + std::to_string(NumElems) + ">";
 
     return test_description;
   }
