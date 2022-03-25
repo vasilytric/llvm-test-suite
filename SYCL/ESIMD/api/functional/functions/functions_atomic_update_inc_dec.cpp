@@ -27,7 +27,8 @@
 using namespace esimd_test::api::functional;
 using namespace sycl::ext::intel::esimd;
 
-// Descriptor class for the case of calling bitwise not operator.
+// Descriptor class for the case of calling atomic_update overload for zero
+// operands.
 struct atomic_update_0_operands {
   static std::string get_description() {
     return "atomic update with zero operands";
@@ -35,21 +36,21 @@ struct atomic_update_0_operands {
 
   template <typename DataT, int NumElems, int NumElemsToChange,
             typename ChangeElemFilterT, atomic_op ChosenOperator>
-  static void simd_function(DataT *input_data, DataT *output_data,
-                            size_t *const indexes_to_change,
-                            size_t work_item_index) {
+  static void call_esimd_function(DataT *input_data, DataT *output_data,
+                                  size_t *const offsets,
+                                  size_t work_item_index) {
     simd<DataT, NumElemsToChange> offset;
-    mask_type_t<NumElemsToChange> changed_indexes;
+    mask_type_t<NumElemsToChange> mask;
 
     ChangeElemFilterT filter{};
     for (size_t i = 0; i < NumElemsToChange; ++i) {
-      changed_indexes[i] = filter(i);
-      offset[i] = indexes_to_change[i] * sizeof(DataT);
+      mask[i] = filter(i);
+      offset[i] = offsets[i] * sizeof(DataT);
     }
 
     auto values_before_update =
-        atomic_update<ChosenOperator, DataT, NumElemsToChange>(
-            input_data, offset, changed_indexes);
+        atomic_update<ChosenOperator, DataT, NumElemsToChange>(input_data,
+                                                               offset, mask);
 
     unsigned int values_sum = 0;
     for (size_t i = 0; i < NumElemsToChange; ++i) {
@@ -71,7 +72,7 @@ class run_test {
   static constexpr int NDRangeDim = NDRangeDimT::value;
   static constexpr int NumElemsToChange = NumElemsToChangeT::value;
   static constexpr atomic_op ChosenOperator = ChosenOperatorT::value;
-  static constexpr functions::algorithm_to_change AlgorithmToChange =
+  static constexpr functions::offset AlgorithmToChange =
       AlgorithmToChangeT::value;
   using TestDescriptionT = functions::TestDescription<NumElems, TestCaseT>;
 
@@ -83,17 +84,17 @@ public:
     constexpr DataT result_fill_value = 5;
 
     auto init_values =
-        functions::get_init_values<NumElems, ChosenOperator, DataT>(base_value);
+        functions::get_init_values<NumElemsToChange, ChosenOperator, DataT>(
+            base_value);
     shared_allocator<DataT> allocator(queue);
     shared_vector<DataT> shared_init_values(init_values.begin(),
                                             init_values.end(), allocator);
     shared_vector<DataT> shared_result(NumElems, result_fill_value, allocator);
 
-    auto indexes_to_change =
-        functions::get_indexess_to_change<NumElems, AlgorithmToChange>();
-    shared_vector<size_t> shared_indexes_to_change(
-        indexes_to_change.begin(), indexes_to_change.end(),
-        shared_allocator<size_t>(queue));
+    auto offsets =
+        functions::get_offsets<NumElemsToChange, AlgorithmToChange>();
+    shared_vector<size_t> shared_offsets(offsets.begin(), offsets.end(),
+                                         shared_allocator<size_t>(queue));
 
     constexpr int NumberIteractions = 16;
     sycl::nd_range<NDRangeDim> nd_range =
@@ -101,19 +102,18 @@ public:
 
     queue.submit([&](sycl::handler &cgh) {
       DataT *shared_init_values_ptr = shared_init_values.data();
-      DataT *result_ptr = shared_result.data();
-      size_t *const indexes_to_change_ptr = shared_indexes_to_change.data();
+      DataT *shared_result_ptr = shared_result.data();
+      size_t *const offsets_ptr = shared_offsets.data();
 
       cgh.parallel_for<
           Kernel<DataT, NumElems, TestCaseT, ChosenOperatorT, NDRangeDimT,
                  NumElemsToChangeT, ChangeElemFilterT, AlgorithmToChangeT>>(
           nd_range, [=](sycl::nd_item<1> nd_item) SYCL_ESIMD_KERNEL {
             const size_t work_item_index = nd_item.get_global_linear_id();
-            TestCaseT::template simd_function<DataT, NumElems, NumElemsToChange,
-                                              ChangeElemFilterT,
-                                              ChosenOperator>(
-                shared_init_values_ptr, result_ptr, indexes_to_change_ptr,
-                work_item_index);
+            TestCaseT::template call_esimd_function<
+                DataT, NumElems, NumElemsToChange, ChangeElemFilterT,
+                ChosenOperator>(shared_init_values_ptr, shared_result_ptr,
+                                offsets_ptr, work_item_index);
           });
     });
     queue.wait_and_throw();
@@ -122,6 +122,9 @@ public:
 
     ChangeElemFilterT filter{};
     size_t num_changed_elems = 0;
+    // Collect the number of elements that should be changed. This value will be
+    // used to calculate expected value for all elements that will be returned
+    // after atomic_update call the sum of changed elements.
     for (size_t i = 0; i < NumElemsToChange; ++i) {
       if (filter(i) == 1) {
         ++num_changed_elems;
@@ -145,38 +148,38 @@ public:
       }
     }
 
-    std::vector<size_t> selected_indexes;
-    // Collect the indexess that has been selected.
+    std::vector<size_t> changed_elems_indexes;
+    // Collect the indexess that has been changed.
     for (size_t i = 0; i < NumElemsToChange; ++i) {
       if (filter(i) == 1) {
-        selected_indexes.push_back(indexes_to_change[i]);
+        changed_elems_indexes.push_back(offsets[i]);
       }
     }
 
     // Push the largest value to avoid the following error: can't dereference
     // out of range vector iterator.
-    selected_indexes.push_back(std::numeric_limits<size_t>::max());
-    auto next_selected_index = selected_indexes.begin();
+    changed_elems_indexes.push_back(std::numeric_limits<size_t>::max());
+    auto updated_elem_next_index = changed_elems_indexes.begin();
 
     const DataT &expected = base_value;
     DataT expected_after_change = functions::get_expected_value<ChosenOperator>(
         base_value, NumberIteractions);
     // Verify that values, that do not was changed has initial values.
     for (size_t i = 0; i < NumElems; ++i) {
-      // If current index is less than selected index verify that this element
-      // hasn't been changed.
+      // If current index is less than changed element index verify that this
+      // element hasn't been changed.
       const DataT &retrieved = shared_init_values[i];
-      if (i < *next_selected_index) {
+      if (i < *updated_elem_next_index) {
         if (expected != retrieved) {
           passed = fail_test(i, expected, retrieved, data_type,
-                             "value that should be updated");
+                             "value that should not be updated");
         }
       } else {
         if (expected_after_change != retrieved) {
           passed = fail_test(i, expected_after_change, retrieved, data_type,
                              "value that should be updated");
         }
-        next_selected_index++;
+        updated_elem_next_index++;
       }
     }
 
@@ -208,15 +211,15 @@ int main(int, char **) {
   const auto num_elems_to_change = integer_pack<1, 8>::generate_unnamed();
 
   const auto filter_types =
-      unnamed_type_pack<functions::filters::ChangeByStep,
-                        functions::filters::ChangeAll,
-                        functions::filters::ChangeNothing>::generate();
+      unnamed_type_pack<functions::masks::ChangeByStep,
+                        functions::masks::ChangeAll,
+                        functions::masks::ChangeNothing>::generate();
   const auto atomic_op_types =
       value_pack<atomic_op, atomic_op::inc, atomic_op::dec>::generate_unnamed();
-  const auto algorithm_to_change_types = value_pack<
-      functions::algorithm_to_change, functions::algorithm_to_change::all,
-      functions::algorithm_to_change::ordered_step,
-      functions::algorithm_to_change::non_ordered_step>::generate_unnamed();
+  const auto algorithm_to_change_types =
+      value_pack<functions::offset, functions::offset::all,
+                 functions::offset::ordered_step,
+                 functions::offset::non_ordered_step>::generate_unnamed();
 
   // Running test for combinations for data types, simd sizes, dn_range
   // dimensions, number element to change, filter types, atomic operator types

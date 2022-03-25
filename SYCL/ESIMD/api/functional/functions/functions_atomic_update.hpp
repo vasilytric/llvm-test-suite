@@ -26,7 +26,7 @@ namespace esimd_test::api::functional::functions {
 
 // Structure that provides a call operator that lets filter values by different
 // algorithm.
-namespace filters {
+namespace masks {
 struct ChangeByStep {
   bool operator()(size_t val) SYCL_ESIMD_KERNEL { return val % 2 == 0; }
 };
@@ -38,22 +38,19 @@ struct ChangeAll {
 struct ChangeNothing {
   bool operator()(size_t val) SYCL_ESIMD_KERNEL { return false; }
 };
-} // namespace filters
+} // namespace masks
 
-enum class algorithm_to_change { all, ordered_step, non_ordered_step };
+enum class offset { all, ordered_step, non_ordered_step };
 
-template <int N, algorithm_to_change Algorithm>
-std::vector<size_t> get_indexess_to_change() {
+template <int N, offset Algorithm> std::vector<size_t> get_offsets() {
   std::vector<size_t> data;
-  size_t step;
+  size_t step = 1;
 
-  if constexpr (Algorithm == algorithm_to_change::all) {
-    step = 1;
-  } else if constexpr (Algorithm == algorithm_to_change::ordered_step) {
+  if constexpr (Algorithm == offset::ordered_step) {
     step = 2;
   }
 
-  if constexpr (Algorithm == algorithm_to_change::non_ordered_step) {
+  if constexpr (Algorithm == offset::non_ordered_step) {
     data = std::vector<size_t>{1, 3, 7, 5};
     for (size_t i = data.size(); i < N; ++i) {
       data.push_back(2 * i + 1);
@@ -69,16 +66,13 @@ std::vector<size_t> get_indexess_to_change() {
 template <int N, esimd::atomic_op Operator, typename T>
 std::vector<T> get_init_values(T initial_base_value) {
   std::vector<T> data;
-  T base_value;
-  T step;
+  T base_value = initial_base_value;
+  T step = 0;
 
-  if constexpr (Operator == esimd::atomic_op::dec) {
-    base_value = initial_base_value;
-    step = 0;
-  } else if constexpr (Operator == esimd::atomic_op::inc) {
-    base_value = initial_base_value;
-    step = 0;
-  }
+  // Will need to update base value and step for some operators
+  static_assert((Operator == esimd::atomic_op::inc) ||
+                    (Operator == esimd::atomic_op::dec),
+                "Unsupported operator");
 
   for (size_t i = 0; i < N; ++i) {
     data.push_back(base_value + step * i);
@@ -87,15 +81,14 @@ std::vector<T> get_init_values(T initial_base_value) {
 }
 
 template <esimd::atomic_op Operator, typename T>
-T get_expected_value(T base_value, int number_teractions) {
-  T expected;
-
+T get_expected_value(T base_value, int number_of_iteractions) {
   if constexpr (Operator == esimd::atomic_op::dec) {
-    expected = base_value - number_teractions;
+    return base_value - number_of_iteractions;
   } else if constexpr (Operator == esimd::atomic_op::inc) {
-    expected = base_value + number_teractions;
+    return base_value + number_of_iteractions;
+  } else {
+    static_assert(Operator != Operator, "Unexpected  operator type.");
   }
-  return expected;
 }
 
 } // namespace esimd_test::api::functional::functions
