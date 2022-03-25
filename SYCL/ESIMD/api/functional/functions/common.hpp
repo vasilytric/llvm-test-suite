@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 ///
 /// \file
-/// This file provides common things for simd functions tests.
+/// This file provides common code for simd functions tests.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -16,6 +16,8 @@
 #include "../common.hpp"
 
 namespace esimd_test::api::functional::functions {
+
+namespace esimd = sycl::ext::intel::esimd;
 
 template <int NumElems, typename ContextT>
 class TestDescription : public ITestDescription {
