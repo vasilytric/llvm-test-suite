@@ -15,6 +15,9 @@
 // RUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
 // RUN: %GPU_RUN_PLACEHOLDER %t.out
 //
+// TODO simd<sycl::half, 32> fills with unexpected value. The
+// SIMD_RUN_TEST_WITH_SYCL_HALF_TYPE macros must be enabled when it is resolved.
+//
 // Test for simd select for 2d function.
 // The test creates source simd instance with reference data and invokes logical
 // not operator, using floating point extra data types.

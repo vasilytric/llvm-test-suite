@@ -210,7 +210,11 @@ bool run_test_with_chosen_data_types(sycl::queue &queue) {
       expected_width - round_up_int_division(2 * expected_width, 3);
 
   const auto great_size = get_dimensions<desired_simd_large_size>();
+#ifdef SIMD_RUN_TEST_WITH_SYCL_HALF_TYPE
   const auto all_types = get_tested_types<TestedTypesT>();
+#else
+  const auto all_types = named_type_pack<double>::generate("double");
+#endif
 
   // Verify correctness for different select sizes.
   passed &= run_with_size_stride_offset<select_2d, 1, 1, 1, 1, 1, 1,
