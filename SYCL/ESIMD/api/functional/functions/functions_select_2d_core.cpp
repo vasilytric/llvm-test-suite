@@ -30,8 +30,7 @@ int main(int, char **) {
   sycl::queue queue(esimd_test::ESIMDSelector{},
                     esimd_test::createExceptionHandler());
 
-  bool passed =
-      functions::run_test_with_chosen_data_types<tested_types::core>(queue);
+  bool passed = functions::run_test_for_types<tested_types::core>(queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

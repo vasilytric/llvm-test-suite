@@ -17,21 +17,27 @@
 #include "../shared_element.hpp"
 #include "common.hpp"
 
+// for std::numeric_limits
+#include <limits>
+// for std::iota
+#include <numeric>
+
 namespace esimd = sycl::ext::intel::esimd;
 
 namespace esimd_test::api::functional::functions {
 
-// Descriptor class for the case of calling simd<T,N>::select function.
+// Descriptor class for the case of calling simd<T,N>::2d select function.
 struct select_2d {
   static std::string get_description() { return "2d select"; }
 
   template <typename DataT, int NumElems, int SizeY, int StrideY, int SizeX,
             int StrideX, int Height, int Width>
-  static void call_esimd_function(const DataT *const ref_1,
-                                  const DataT *const ref_2, DataT *const out,
-                                  size_t offset_x, size_t offset_y) {
+  static void call_esimd_function(const DataT *const initial_data_1,
+                                  const DataT *const initial_data_2,
+                                  DataT *const out, size_t offset_x,
+                                  size_t offset_y) {
     esimd::simd<DataT, NumElems> src_simd_obj;
-    src_simd_obj.copy_from(ref_1);
+    src_simd_obj.copy_from(initial_data_1);
 
     auto simd_view_instance =
         src_simd_obj.template bit_cast_view<DataT, Height, Width>();
@@ -42,8 +48,7 @@ struct select_2d {
     size_t ref_2_index = 0;
     for (int i = 0; i < SizeY; ++i) {
       for (int j = 0; j < SizeX; ++j) {
-        auto a = selected_elems.row(i);
-        a[j] = ref_2[ref_2_index];
+        selected_elems.row(i)[j] = initial_data_2[ref_2_index];
         ++ref_2_index;
       }
     }
@@ -68,6 +73,7 @@ class run_test {
   static constexpr int OffsetY = OffsetYT::value;
   static constexpr int Height = NumElems / SimdSplitCoeffT::value;
   static constexpr int Width = NumElems / Height;
+  using TestDescriptionT = TestDescription<NumElems, TestCaseT>;
 
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
@@ -76,83 +82,73 @@ public:
     static_assert(NumElems == Height * Width,
                   "Invalid SimdSplitCoeff, height and width multiplacation "
                   "should be equal to simd size.");
-    static_assert(Width > SizeX, "Number selected elements can't be greater "
-                                 "than number elements in one line");
-    static_assert(
-        Height > SizeY,
-        "Number selected elements can't be greater than lines number");
-    assert(Height > OffsetY &&
-           "Offset of height should be less than simd_view height size");
-    assert(Width > OffsetX &&
-           "Offset of with should be less than simd_view with size");
+    static_assert(Width > SizeX);
+    static_assert(Height > SizeY);
+    static_assert(Height > OffsetY);
+    static_assert(Width > OffsetX);
 
-    constexpr size_t value_for_increase_ref_data_for_fill = 50;
-    static_assert(std::numeric_limits<char>::max() >
-                      value_for_increase_ref_data_for_fill + NumElems,
+    constexpr size_t value_for_increase_ref_data_for_change = 50;
+    static_assert(std::numeric_limits<signed char>::max() >
+                      value_for_increase_ref_data_for_change + NumElems,
                   "Value that used for increase ref data for fill plus simd "
                   "size should be less than char max value.");
 
     shared_allocator<DataT> allocator(queue);
     shared_vector<DataT> result(NumElems, allocator);
     shared_vector<DataT> initial_ref_data(NumElems, allocator);
-    shared_vector<DataT> ref_data_for_fill(SizeY * SizeX, allocator);
+    shared_vector<DataT> ref_data_for_change(SizeY * SizeX, allocator);
 
-    for (size_t i = 0; i < NumElems; ++i) {
-      initial_ref_data[i] = i + 1;
-    }
+    std::iota(initial_ref_data.begin(), initial_ref_data.end(), 1);
     // We should have different values in the first reference data and in the
     // second reference data.
-    for (size_t i = 0; i < NumElems; ++i) {
-      ref_data_for_fill[i] =
-          initial_ref_data[i] + value_for_increase_ref_data_for_fill;
-    }
+    std::iota(ref_data_for_change.begin(), ref_data_for_change.end(),
+              initial_ref_data.back() + value_for_increase_ref_data_for_change);
 
     queue.submit([&](sycl::handler &cgh) {
       DataT *init_ref_ptr = initial_ref_data.data();
-      DataT *ref_data_for_fill_ptr = ref_data_for_fill.data();
+      DataT *ref_data_for_change_ptr = ref_data_for_change.data();
       DataT *const out_ptr = result.data();
       cgh.single_task<
           Kernel<DataT, NumElems, TestCaseT, SizeYT, StrideYT, SizeXT, StrideXT,
                  SimdSplitCoeffT, OffsetXT, OffsetYT>>([=]() SYCL_ESIMD_KERNEL {
         TestCaseT::template call_esimd_function<DataT, NumElems, SizeY, StrideY,
                                                 SizeX, StrideX, Height, Width>(
-            init_ref_ptr, ref_data_for_fill_ptr, out_ptr, OffsetX, OffsetY);
+            init_ref_ptr, ref_data_for_change_ptr, out_ptr, OffsetX, OffsetY);
       });
     });
     queue.wait_and_throw();
 
-    std::vector<size_t> selected_indexsess;
+    std::vector<size_t> selected_indexes;
     // Collect the indexess that has been selected.
     for (int i = 0; i < SizeY; ++i) {
       for (int j = 0; j < SizeX; ++j) {
-        selected_indexsess.push_back(OffsetY * Width + i * Width * StrideY +
-                                     j * StrideX + OffsetX);
+        selected_indexes.push_back(OffsetY * Width + i * Width * StrideY +
+                                   j * StrideX + OffsetX);
       }
     }
 
     // Push the largest value to avoid the following error: can't dereference
     // out of range vector iterator.
-    selected_indexsess.push_back(std::numeric_limits<size_t>::max());
-    auto selected_indexsess_ptr = selected_indexsess.begin();
+    selected_indexes.push_back(std::numeric_limits<size_t>::max());
+    auto selected_indexses_ptr = selected_indexes.begin();
 
     for (int i = 0; i < NumElems; ++i) {
       // If current index is less than selected index verify that this element
       // hasn't been selected and changed.
-      if (i < *selected_indexsess_ptr) {
-        DataT retrieved = result[i];
-        DataT expected = initial_ref_data[i];
+      if (i < *selected_indexses_ptr) {
+        const DataT &retrieved = result[i];
+        const DataT &expected = initial_ref_data[i];
         if (expected != retrieved) {
           passed = fail_test(i, expected, retrieved, data_type);
         }
       } else {
-        DataT retrieved = result[i];
-        DataT expected = ref_data_for_fill.front();
-        ref_data_for_fill.erase(ref_data_for_fill.begin());
-
+        const DataT &retrieved = result[i];
+        const DataT expected = ref_data_for_change.front();
+        ref_data_for_change.erase(ref_data_for_change.begin());
         if (expected != retrieved) {
           passed = fail_test(i, expected, retrieved, data_type);
         }
-        selected_indexsess_ptr++;
+        selected_indexses_ptr++;
       }
     }
 
@@ -162,13 +158,12 @@ public:
 private:
   bool fail_test(size_t i, DataT expected, DataT retrieved,
                  const std::string &data_type) {
-    log::fail(TestDescription<NumElems, TestCaseT>(data_type),
-              "Unexpected value at index ", i, ", retrieved: ", retrieved,
-              ", expected: ", expected, ", with size x: ", SizeX,
-              ", stride x: ", StrideX, ", size y: ", SizeY,
-              ", stride y: ", StrideY, ", height: ", Height,
-              ", offset x: ", OffsetX, ", offset y: ", OffsetY,
-              ", width: ", Width);
+    log::fail(TestDescriptionT(data_type), "Unexpected value at index ", i,
+              ", retrieved: ", retrieved, ", expected: ", expected,
+              ", with size x: ", SizeX, ", stride x: ", StrideX,
+              ", size y: ", SizeY, ", stride y: ", StrideY,
+              ", height: ", Height, ", offset x: ", OffsetX,
+              ", offset y: ", OffsetY, ", width: ", Width);
 
     return false;
   }
@@ -196,8 +191,8 @@ bool run_with_size_stride_offset(ArgsT &&...args) {
 // Helping function that lets launch test with provided tested_types.
 // IMPORTANT: do not set offset value that greater than expected number of
 // strings or element in one string in simd_view.
-template <tested_types TestedTypesT>
-bool run_test_with_chosen_data_types(sycl::queue &queue) {
+template <tested_types TestedTypes>
+bool run_test_for_types(sycl::queue &queue) {
   bool passed = true;
   constexpr int desired_simd_large_size = 32;
   constexpr int coefficient_of_division = 3;
@@ -212,7 +207,7 @@ bool run_test_with_chosen_data_types(sycl::queue &queue) {
 
   const auto great_size = get_dimensions<desired_simd_large_size>();
 #ifdef SIMD_RUN_TEST_WITH_SYCL_HALF_TYPE
-  const auto all_types = get_tested_types<TestedTypesT>();
+  const auto all_types = get_tested_types<TestedTypes>();
 #else
   const auto all_types = named_type_pack<double>::generate("double");
 #endif
