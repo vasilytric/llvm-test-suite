@@ -167,6 +167,7 @@ private:
               ", expected: ", expected, ", with size x: ", SizeX,
               ", stride x: ", StrideX, ", size y: ", SizeY,
               ", stride y: ", StrideY, ", height: ", Height,
+              ", offset x: ", OffsetX, ", offset y: ", OffsetY,
               ", width: ", Width);
 
     return false;
