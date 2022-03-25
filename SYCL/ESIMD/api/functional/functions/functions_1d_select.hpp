@@ -109,8 +109,7 @@ class run_test {
   static constexpr int NumSelectedElems = NumSelectedElemsT::value;
   static constexpr int Stride = StrideT::value;
   static constexpr int Offset = OffsetT::value;
-  using TestDescriptionT =
-      TestDescription<NumElems, TestCaseT>;
+  using TestDescriptionT = TestDescription<NumElems, TestCaseT>;
 
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
