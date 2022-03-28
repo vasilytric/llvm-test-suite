@@ -42,6 +42,7 @@ struct ChangeNothing {
 
 enum class offset { all, ordered_step, non_ordered_step };
 
+// Provides std::vector with offset values.
 template <int N, offset Algorithm> std::vector<size_t> get_offsets() {
   std::vector<size_t> data;
   size_t step = 1;
@@ -51,9 +52,9 @@ template <int N, offset Algorithm> std::vector<size_t> get_offsets() {
   }
 
   if constexpr (Algorithm == offset::non_ordered_step) {
-    data = std::vector<size_t>{1, 3, 7, 5};
-    for (size_t i = data.size(); i < N; ++i) {
-      data.push_back(2 * i + 1);
+    for (size_t i = 0; i < N; ++i) {
+      size_t max_value = 2 * N;
+      data.push_back(max_value - 2 * i);
     }
   } else {
     for (size_t i = 0; i < N; ++i) {
@@ -63,6 +64,7 @@ template <int N, offset Algorithm> std::vector<size_t> get_offsets() {
   return data;
 }
 
+// Provides std::vector that filled with initial values.
 template <int N, esimd::atomic_op Operator, typename T>
 std::vector<T> get_init_values(T initial_base_value) {
   std::vector<T> data;
@@ -78,17 +80,6 @@ std::vector<T> get_init_values(T initial_base_value) {
     data.push_back(base_value + step * i);
   }
   return data;
-}
-
-template <esimd::atomic_op Operator, typename T>
-T get_expected_value(T base_value, int number_of_iteractions) {
-  if constexpr (Operator == esimd::atomic_op::dec) {
-    return base_value - number_of_iteractions;
-  } else if constexpr (Operator == esimd::atomic_op::inc) {
-    return base_value + number_of_iteractions;
-  } else {
-    static_assert(Operator != Operator, "Unexpected  operator type.");
-  }
 }
 
 } // namespace esimd_test::api::functional::functions

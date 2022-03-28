@@ -61,6 +61,18 @@ struct atomic_update_0_operands {
   }
 };
 
+// Provides expected value for updated memory locations.
+template <esimd::atomic_op Operator, typename T>
+T get_expected_value(T base_value, int number_of_iteractions) {
+  if constexpr (Operator == esimd::atomic_op::dec) {
+    return base_value - number_of_iteractions;
+  } else if constexpr (Operator == esimd::atomic_op::inc) {
+    return base_value + number_of_iteractions;
+  } else {
+    static_assert(Operator != Operator, "Unexpected  operator type.");
+  }
+}
+
 // The main test routine.
 // Using functor class to be able to iterate over the pre-defined data types.
 template <typename TestCaseT, typename DataT, typename NumElemsT,
@@ -162,8 +174,8 @@ public:
     auto updated_elem_next_index = changed_elems_indexes.begin();
 
     const DataT &expected = base_value;
-    DataT expected_after_change = functions::get_expected_value<ChosenOperator>(
-        base_value, NumberIteractions);
+    DataT expected_after_change =
+        get_expected_value<ChosenOperator>(base_value, NumberIteractions);
     // Verify that values, that do not was changed has initial values.
     for (size_t i = 0; i < NumElems; ++i) {
       // If current index is less than changed element index verify that this
