@@ -91,6 +91,7 @@ class run_test {
 public:
   bool operator()(sycl::queue &queue, const std::string &data_type) {
     static_assert(NDRangeDim <= 3 && NDRangeDim > 0);
+    static_assert(NumElemsToChange <= NumElems);
     bool passed = true;
     constexpr DataT base_value = 100;
     constexpr DataT result_fill_value = 5;
