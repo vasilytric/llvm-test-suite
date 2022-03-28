@@ -89,7 +89,8 @@ class run_test {
   using TestDescriptionT = functions::TestDescription<NumElems, TestCaseT>;
 
 public:
-  bool operator()(sycl::queue &queue, const std::string &data_type) {
+  bool operator()(sycl::queue &queue, const std::string &data_type,
+                  const std::string &operator_type) {
     static_assert(NDRangeDim <= 3 && NDRangeDim > 0);
     static_assert(NumElemsToChange <= NumElems);
     bool passed = true;
@@ -149,14 +150,14 @@ public:
       if (i < NumberIteractions) {
         if (result_fill_value != retrieved) {
           passed = fail_test(i, result_fill_value, retrieved, data_type,
-                             "atomic_update return value");
+                             "atomic_update return value", operator_type);
         }
       } else {
         const DataT &expected = base_value * num_changed_elems +
                                 (i - NumberIteractions) * num_changed_elems;
         if (expected != retrieved) {
           passed = fail_test(i, expected, retrieved, data_type,
-                             "atomic_update return value");
+                             "atomic_update return value", operator_type);
         }
       }
     }
@@ -185,12 +186,12 @@ public:
       if (i < *updated_elem_next_index) {
         if (expected != retrieved) {
           passed = fail_test(i, expected, retrieved, data_type,
-                             "value that should not be updated");
+                             "value that should not be updated", operator_type);
         }
       } else {
         if (expected_after_change != retrieved) {
           passed = fail_test(i, expected_after_change, retrieved, data_type,
-                             "value that should be updated");
+                             "value that should be updated", operator_type);
         }
         updated_elem_next_index++;
       }
@@ -202,11 +203,13 @@ public:
 private:
   bool fail_test(size_t i, DataT expected, DataT retrieved,
                  const std::string &data_type,
-                 const std::string &verification_type) {
+                 const std::string &verification_type,
+                 const std::string &operator_type) {
     log::fail(TestDescriptionT(data_type), "Unexpected value at index ", i,
               ", retrieved: ", retrieved, ", expected: ", expected,
               ", for verification type: ", verification_type,
-              ", with number elements to change: ", NumElemsToChange);
+              ", with number elements to change: ", NumElemsToChange,
+              ", with operator type: ", operator_type);
 
     return false;
   }
@@ -228,7 +231,8 @@ int main(int, char **) {
                         functions::masks::ChangeAll,
                         functions::masks::ChangeNothing>::generate();
   const auto atomic_op_types =
-      value_pack<atomic_op, atomic_op::inc, atomic_op::dec>::generate_unnamed();
+      value_pack<atomic_op, atomic_op::inc, atomic_op::dec>::generate_named(
+          " atomic_op::inc", "atomic_op::dec");
   const auto algorithm_to_change_types =
       value_pack<functions::offset, functions::offset::all,
                  functions::offset::ordered_step,
