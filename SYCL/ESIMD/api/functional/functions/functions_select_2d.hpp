@@ -131,6 +131,7 @@ public:
     // out of range vector iterator.
     selected_indexes.push_back(std::numeric_limits<size_t>::max());
     auto selected_indexses_ptr = selected_indexes.begin();
+    auto current_ref_value = ref_data_for_change.begin();
 
     for (int i = 0; i < NumElems; ++i) {
       // If current index is less than selected index verify that this element
@@ -143,12 +144,12 @@ public:
         }
       } else {
         const DataT &retrieved = result[i];
-        const DataT expected = ref_data_for_change.front();
-        ref_data_for_change.erase(ref_data_for_change.begin());
+        const DataT &expected = *current_ref_value;
         if (expected != retrieved) {
           passed = fail_test(i, expected, retrieved, data_type);
         }
         selected_indexses_ptr++;
+        current_ref_value++;
       }
     }
 
