@@ -36,9 +36,8 @@ struct atomic_update_0_operands {
 
   template <typename DataT, int NumElemsToChange, typename ChangeElemFilterT,
             atomic_op ChosenOperator>
-  static void call_esimd_function(DataT *input_data, DataT *output_data,
-                                  size_t *const offsets,
-                                  size_t work_item_index) {
+  static int call_esimd_function(DataT *input_data, DataT *output_data,
+                                 size_t *const offsets) {
     simd<DataT, NumElemsToChange> offset;
     mask_type_t<NumElemsToChange> mask;
 
@@ -57,7 +56,7 @@ struct atomic_update_0_operands {
       values_sum += values_before_update[i];
     }
 
-    output_data[work_item_index] = values_sum;
+    return values_sum;
   }
 };
 
@@ -124,10 +123,10 @@ public:
                  NumElemsToChangeT, ChangeElemFilterT, AlgorithmToChangeT>>(
           nd_range, [=](sycl::nd_item<1> nd_item) SYCL_ESIMD_KERNEL {
             const size_t work_item_index = nd_item.get_global_linear_id();
-            TestCaseT::template call_esimd_function<
-                DataT, NumElemsToChange, ChangeElemFilterT, ChosenOperator>(
-                shared_init_values_ptr, shared_result_ptr, offsets_ptr,
-                work_item_index);
+            shared_result_ptr[work_item_index] =
+                TestCaseT::template call_esimd_function<
+                    DataT, NumElemsToChange, ChangeElemFilterT, ChosenOperator>(
+                    shared_init_values_ptr, shared_result_ptr, offsets_ptr);
           });
     });
     queue.wait_and_throw();
