@@ -13,7 +13,10 @@
 // "XREQUIRES".
 // UNSUPPORTED: cuda, hip
 // RUN: %clangxx -fsycl %s -fsycl-device-code-split=per_kernel -o %t.out
-// RUN: %GPU_RUN_PLACEHOLDER %t.out
+// XRUN: %GPU_RUN_PLACEHOLDER %t.out
+// XFAIL: *
+// TODO Remove XFAIL once unexpected error "Unknown type name 'uint8_t'" within
+// integration header is gone.
 //
 // Test for simd atomic_update function.
 // The test uses increment and decrement atomic operators. Invokes atomic_update
