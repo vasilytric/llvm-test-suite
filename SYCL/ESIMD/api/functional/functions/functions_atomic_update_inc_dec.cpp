@@ -39,8 +39,7 @@ struct atomic_update_0_operands {
 
   template <typename DataT, int NumElemsToChange, typename ChangeElemFilterT,
             atomic_op ChosenOperator>
-  static int call_esimd_function(DataT *input_data, DataT *output_data,
-                                 size_t *const offsets) {
+  static int call_esimd_function(DataT *input_data, size_t *const offsets) {
     simd<DataT, NumElemsToChange> offset;
     mask_type_t<NumElemsToChange> mask;
 
@@ -127,7 +126,7 @@ public:
             shared_result_ptr[work_item_index] =
                 TestCaseT::template call_esimd_function<
                     DataT, NumElemsToChange, ChangeElemFilterT, ChosenOperator>(
-                    shared_init_values_ptr, shared_result_ptr, offsets_ptr);
+                    shared_init_values_ptr, offsets_ptr);
           });
     });
     queue.wait_and_throw();
