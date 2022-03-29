@@ -40,18 +40,19 @@ struct ChangeNothing {
 };
 } // namespace masks
 
-enum class offset { all, ordered_step, non_ordered_step };
+enum class offset_generation { all, ordered_step, non_ordered_step };
 
 // Provides std::vector with offset values.
-template <int N, offset Algorithm> std::vector<size_t> get_offsets() {
+template <int N, offset_generation Algorithm>
+std::vector<size_t> get_offsets() {
   std::vector<size_t> data;
   size_t step = 1;
 
-  if constexpr (Algorithm == offset::ordered_step) {
+  if constexpr (Algorithm == offset_generation::ordered_step) {
     step = 2;
   }
 
-  if constexpr (Algorithm == offset::non_ordered_step) {
+  if constexpr (Algorithm == offset_generation::non_ordered_step) {
     for (size_t i = 0; i < N; ++i) {
       size_t max_value = 2 * N;
       data.push_back(max_value - 2 * i);

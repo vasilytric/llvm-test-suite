@@ -63,11 +63,11 @@ struct atomic_update_0_operands {
 
 // Provides expected value for updated memory locations.
 template <esimd::atomic_op Operator, typename T>
-T get_expected_value(T base_value, int number_of_iteractions) {
+T get_expected_value(T base_value, int number_of_iterations) {
   if constexpr (Operator == esimd::atomic_op::dec) {
-    return base_value - number_of_iteractions;
+    return base_value - number_of_iterations;
   } else if constexpr (Operator == esimd::atomic_op::inc) {
-    return base_value + number_of_iteractions;
+    return base_value + number_of_iterations;
   } else {
     static_assert(Operator != Operator, "Unexpected  operator type.");
   }
@@ -84,7 +84,7 @@ class run_test {
   static constexpr int NDRangeDim = NDRangeDimT::value;
   static constexpr int NumElemsToChange = NumElemsToChangeT::value;
   static constexpr atomic_op ChosenOperator = ChosenOperatorT::value;
-  static constexpr functions::offset AlgorithmToChange =
+  static constexpr functions::offset_generation AlgorithmToChange =
       AlgorithmToChangeT::value;
   using TestDescriptionT = functions::TestDescription<NumElems, TestCaseT>;
 
@@ -108,11 +108,11 @@ public:
     shared_vector<size_t> shared_offsets(offsets.begin(), offsets.end(),
                                          shared_allocator<size_t>(queue));
 
-    constexpr int NumberIteractions = 16;
-    shared_vector<DataT> shared_result(NumberIteractions, result_fill_value,
+    constexpr int NumberIterations = 16;
+    shared_vector<DataT> shared_result(NumberIterations, result_fill_value,
                                        allocator);
     sycl::nd_range<NDRangeDim> nd_range =
-        get_sycl_nd_range<NDRangeDim>(NumberIteractions);
+        get_sycl_nd_range<NDRangeDim>(NumberIterations);
 
     queue.submit([&](sycl::handler &cgh) {
       DataT *shared_init_values_ptr = shared_init_values.data();
@@ -144,10 +144,10 @@ public:
     }
 
     std::sort(shared_result.begin(), shared_result.end());
-    for (size_t i = 0; i < NumberIteractions; ++i) {
+    for (size_t i = 0; i < NumberIterations; ++i) {
       const DataT &retrieved = shared_result[i];
       const DataT &expected = base_value * num_changed_elems +
-                              (i - NumberIteractions) * num_changed_elems;
+                              (i - NumberIterations) * num_changed_elems;
       if (expected != retrieved) {
         passed = fail_test(i, expected, retrieved, data_type,
                            "atomic_update return value", operator_type);
@@ -169,7 +169,7 @@ public:
 
     const DataT &expected = base_value;
     DataT expected_after_change =
-        get_expected_value<ChosenOperator>(base_value, NumberIteractions);
+        get_expected_value<ChosenOperator>(base_value, NumberIterations);
     // Verify that values, that do not was changed has initial values.
     for (size_t i = 0; i < NumElems; ++i) {
       // If current index is less than changed element index verify that this
@@ -225,17 +225,17 @@ int main(int, char **) {
   const auto atomic_op_types =
       value_pack<atomic_op, atomic_op::inc, atomic_op::dec>::generate_named(
           " atomic_op::inc", "atomic_op::dec");
-  const auto algorithm_to_change_types =
-      value_pack<functions::offset, functions::offset::all,
-                 functions::offset::ordered_step,
-                 functions::offset::non_ordered_step>::generate_unnamed();
+  const auto algorithm_to_change_offset = value_pack<
+      functions::offset_generation, functions::offset_generation::all,
+      functions::offset_generation::ordered_step,
+      functions::offset_generation::non_ordered_step>::generate_unnamed();
 
   // Running test for combinations for data types, simd sizes, dn_range
   // dimensions, number element to change, filter types, atomic operator types
   // and algorithms to change.
   passed &= for_all_combinations<run_test, atomic_update_0_operands>(
       uint_types, single_size, nd_range_dims, num_elems_to_change, filter_types,
-      atomic_op_types, algorithm_to_change_types, queue);
+      atomic_op_types, algorithm_to_change_offset, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;
