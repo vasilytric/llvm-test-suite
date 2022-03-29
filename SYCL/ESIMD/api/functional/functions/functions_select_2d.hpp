@@ -140,13 +140,15 @@ public:
         const DataT &retrieved = result[i];
         const DataT &expected = initial_ref_data[i];
         if (expected != retrieved) {
-          passed = fail_test(i, expected, retrieved, data_type);
+          passed = fail_test(i, expected, retrieved, data_type,
+                             "that should not be selected");
         }
       } else {
         const DataT &retrieved = result[i];
         const DataT &expected = *current_ref_value;
         if (expected != retrieved) {
-          passed = fail_test(i, expected, retrieved, data_type);
+          passed = fail_test(i, expected, retrieved, data_type,
+                             "that should be selected");
         }
         selected_indexses_ptr++;
         current_ref_value++;
@@ -158,8 +160,10 @@ public:
 
 private:
   bool fail_test(size_t i, DataT expected, DataT retrieved,
-                 const std::string &data_type) {
-    log::fail(TestDescriptionT(data_type), "Unexpected value at index ", i,
+                 const std::string &data_type,
+                 const std::string &verification_type) {
+    log::fail(TestDescriptionT(data_type),
+              "Unexpected value " + verification_type + " at index ", i,
               ", retrieved: ", retrieved, ", expected: ", expected,
               ", with size x: ", SizeX, ", stride x: ", StrideX,
               ", size y: ", SizeY, ", stride y: ", StrideY,
