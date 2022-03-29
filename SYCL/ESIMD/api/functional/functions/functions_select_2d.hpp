@@ -194,14 +194,23 @@ bool run_with_size_stride_offset(ArgsT &&...args) {
 template <tested_types TestedTypes>
 bool run_test_for_types(sycl::queue &queue) {
   bool passed = true;
+  // Values that will be used to cover different test cases.
   constexpr int desired_simd_large_size = 32;
+  // Coefficient that used to decrease expected height or with of selected
+  // elements.
   constexpr int coefficient_of_division = 3;
+  // Default coefficient that will be used to split 1d simd instance into 2d
+  // simd_view instance.
   constexpr int default_simd_split_value = 4;
+  // 2d simd_view instance expected height value.
   constexpr int expected_height =
       desired_simd_large_size / default_simd_split_value;
+  // 2d simd_view instance expected with value.
   constexpr int expected_width = desired_simd_large_size / expected_height;
+  // Height larger used offset that will be used in this test.
   const int heights_large_offset =
       expected_height - round_up_int_division(2 * expected_height, 3);
+  // With larger used offset that will be used in this test.
   const int width_large_offset =
       expected_width - round_up_int_division(2 * expected_width, 3);
 
