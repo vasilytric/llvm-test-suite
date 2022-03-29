@@ -34,8 +34,8 @@ struct atomic_update_0_operands {
     return "atomic update with zero operands";
   }
 
-  template <typename DataT, int NumElems, int NumElemsToChange,
-            typename ChangeElemFilterT, atomic_op ChosenOperator>
+  template <typename DataT, int NumElemsToChange, typename ChangeElemFilterT,
+            atomic_op ChosenOperator>
   static void call_esimd_function(DataT *input_data, DataT *output_data,
                                   size_t *const offsets,
                                   size_t work_item_index) {
@@ -98,12 +98,10 @@ public:
     constexpr DataT result_fill_value = 5;
 
     auto init_values =
-        functions::get_init_values<NumElemsToChange, ChosenOperator, DataT>(
-            base_value);
+        functions::get_init_values<NumElems, ChosenOperator, DataT>(base_value);
     shared_allocator<DataT> allocator(queue);
     shared_vector<DataT> shared_init_values(init_values.begin(),
                                             init_values.end(), allocator);
-    shared_vector<DataT> shared_result(NumElems, result_fill_value, allocator);
 
     auto offsets =
         functions::get_offsets<NumElemsToChange, AlgorithmToChange>();
@@ -111,6 +109,8 @@ public:
                                          shared_allocator<size_t>(queue));
 
     constexpr int NumberIteractions = 16;
+    shared_vector<DataT> shared_result(NumberIteractions, result_fill_value,
+                                       allocator);
     sycl::nd_range<NDRangeDim> nd_range =
         get_sycl_nd_range<NDRangeDim>(NumberIteractions);
 
@@ -125,14 +125,12 @@ public:
           nd_range, [=](sycl::nd_item<1> nd_item) SYCL_ESIMD_KERNEL {
             const size_t work_item_index = nd_item.get_global_linear_id();
             TestCaseT::template call_esimd_function<
-                DataT, NumElems, NumElemsToChange, ChangeElemFilterT,
-                ChosenOperator>(shared_init_values_ptr, shared_result_ptr,
-                                offsets_ptr, work_item_index);
+                DataT, NumElemsToChange, ChangeElemFilterT, ChosenOperator>(
+                shared_init_values_ptr, shared_result_ptr, offsets_ptr,
+                work_item_index);
           });
     });
     queue.wait_and_throw();
-
-    std::sort(shared_result.begin(), shared_result.end());
 
     ChangeElemFilterT filter{};
     size_t num_changed_elems = 0;
@@ -145,20 +143,14 @@ public:
       }
     }
 
-    for (size_t i = 0; i < NumElems; ++i) {
+    std::sort(shared_result.begin(), shared_result.end());
+    for (size_t i = 0; i < NumberIteractions; ++i) {
       const DataT &retrieved = shared_result[i];
-      if (i < NumberIteractions) {
-        if (result_fill_value != retrieved) {
-          passed = fail_test(i, result_fill_value, retrieved, data_type,
-                             "atomic_update return value", operator_type);
-        }
-      } else {
-        const DataT &expected = base_value * num_changed_elems +
-                                (i - NumberIteractions) * num_changed_elems;
-        if (expected != retrieved) {
-          passed = fail_test(i, expected, retrieved, data_type,
-                             "atomic_update return value", operator_type);
-        }
+      const DataT &expected = base_value * num_changed_elems +
+                              (i - NumberIteractions) * num_changed_elems;
+      if (expected != retrieved) {
+        passed = fail_test(i, expected, retrieved, data_type,
+                           "atomic_update return value", operator_type);
       }
     }
 
