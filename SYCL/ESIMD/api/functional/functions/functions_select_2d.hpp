@@ -119,7 +119,7 @@ public:
     queue.wait_and_throw();
 
     std::vector<size_t> selected_indexes;
-    // Collect the indexess that has been selected.
+    // Collect the indexes that has been selected.
     for (int i = 0; i < SizeY; ++i) {
       for (int j = 0; j < SizeX; ++j) {
         selected_indexes.push_back(OffsetY * Width + i * Width * StrideY +
@@ -130,13 +130,13 @@ public:
     // Push the largest value to avoid the following error: can't dereference
     // out of range vector iterator.
     selected_indexes.push_back(std::numeric_limits<size_t>::max());
-    auto selected_indexses_ptr = selected_indexes.begin();
+    auto next_selected_index = selected_indexes.begin();
     auto current_ref_value = ref_data_for_change.begin();
 
     for (int i = 0; i < NumElems; ++i) {
       // If current index is less than selected index verify that this element
       // hasn't been selected and changed.
-      if (i < *selected_indexses_ptr) {
+      if (i < *next_selected_index) {
         const DataT &retrieved = result[i];
         const DataT &expected = initial_ref_data[i];
         if (expected != retrieved) {
@@ -150,7 +150,7 @@ public:
           passed = fail_test(i, expected, retrieved, data_type,
                              "that should be selected");
         }
-        selected_indexses_ptr++;
+        next_selected_index++;
         current_ref_value++;
       }
     }
