@@ -95,18 +95,16 @@ public:
     bool passed = true;
     constexpr DataT base_value = 100;
     constexpr DataT result_fill_value = 5;
-
-    auto init_values =
-        functions::get_init_values<NumElems, ChosenOperator, DataT>(base_value);
     shared_allocator<DataT> allocator(queue);
-    shared_vector<DataT> shared_init_values(init_values.begin(),
-                                            init_values.end(), allocator);
+    shared_vector<DataT> shared_init_values(NumElems, allocator);
+    functions::fill_init_values<NumElems, ChosenOperator, DataT>(
+        base_value, shared_init_values);
 
-    auto offsets =
-        functions::get_offsets<NumElemsToChange, AlgorithmToChange>();
-    shared_vector<size_t> shared_offsets(offsets.begin(), offsets.end(),
+    shared_vector<size_t> shared_offsets(NumElemsToChange,
                                          shared_allocator<size_t>(queue));
-
+    functions::fill_offsets<NumElemsToChange, AlgorithmToChange>(
+        shared_offsets);
+    shared_vector<size_t> local_offsets = shared_offsets;
     constexpr int NumberIterations = 16;
     shared_vector<DataT> shared_result(NumberIterations, result_fill_value,
                                        allocator);
@@ -157,7 +155,7 @@ public:
     // Collect the indexess that has been changed.
     for (size_t i = 0; i < NumElemsToChange; ++i) {
       if (filter(i) == 1) {
-        changed_elems_indexes.push_back(offsets[i]);
+        changed_elems_indexes.push_back(local_offsets[i]);
       }
     }
 

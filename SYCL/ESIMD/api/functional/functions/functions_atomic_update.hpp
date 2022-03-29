@@ -43,9 +43,8 @@ struct ChangeNothing {
 enum class offset_generation { all, ordered_step, non_ordered_step };
 
 // Provides std::vector with offset values.
-template <int N, offset_generation Algorithm>
-std::vector<size_t> get_offsets() {
-  std::vector<size_t> data;
+template <int N, offset_generation Algorithm, typename VectorT>
+void fill_offsets(VectorT &vector) {
   size_t step = 1;
 
   if constexpr (Algorithm == offset_generation::ordered_step) {
@@ -53,22 +52,20 @@ std::vector<size_t> get_offsets() {
   }
 
   if constexpr (Algorithm == offset_generation::non_ordered_step) {
+    size_t max_value = 2 * N;
     for (size_t i = 0; i < N; ++i) {
-      size_t max_value = 2 * N;
-      data.push_back(max_value - 2 * i);
+      vector.push_back(max_value - 2 * i);
     }
   } else {
     for (size_t i = 0; i < N; ++i) {
-      data.push_back(step * i);
+      vector.push_back(step * i);
     }
   }
-  return data;
 }
 
 // Provides std::vector that filled with initial values.
-template <int N, esimd::atomic_op Operator, typename T>
-std::vector<T> get_init_values(T initial_base_value) {
-  std::vector<T> data;
+template <int N, esimd::atomic_op Operator, typename T, typename VectorT>
+void fill_init_values(T initial_base_value, VectorT &vector) {
   T base_value = initial_base_value;
   T step = 0;
 
@@ -78,9 +75,8 @@ std::vector<T> get_init_values(T initial_base_value) {
                 "Unsupported operator");
 
   for (size_t i = 0; i < N; ++i) {
-    data.push_back(base_value + step * i);
+    vector.push_back(base_value + step * i);
   }
-  return data;
 }
 
 } // namespace esimd_test::api::functional::functions
