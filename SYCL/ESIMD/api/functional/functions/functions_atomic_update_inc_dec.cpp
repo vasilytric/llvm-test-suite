@@ -137,9 +137,7 @@ public:
     // used to calculate expected value for all elements that will be returned
     // after atomic_update call the sum of changed elements.
     for (size_t i = 0; i < NumElemsToChange; ++i) {
-      if (filter(i) == 1) {
-        ++num_changed_elems;
-      }
+      num_changed_elems += (filter(i) == 1)
     }
 
     std::sort(shared_result.begin(), shared_result.end());
