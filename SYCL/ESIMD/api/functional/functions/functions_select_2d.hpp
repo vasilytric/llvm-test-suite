@@ -86,6 +86,8 @@ public:
     static_assert(Height > SizeY);
     static_assert(Height > OffsetY);
     static_assert(Width > OffsetX);
+    static_assert(Width > OffsetX);
+    static_assert(Height > OffsetY);
 
     constexpr size_t value_for_increase_ref_data_for_change = 50;
     static_assert(std::numeric_limits<signed char>::max() >
