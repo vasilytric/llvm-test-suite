@@ -143,8 +143,14 @@ public:
     std::sort(shared_result.begin(), shared_result.end());
     for (size_t i = 0; i < NumberIterations; ++i) {
       const DataT &retrieved = shared_result[i];
-      const DataT &expected = base_value * num_changed_elems +
-                              (i - NumberIterations) * num_changed_elems;
+      DataT expected;
+      if constexpr (ChosenOperator == atomic_op::inc) {
+        expected = (base_value + i) * num_changed_elems;
+      } else if constexpr (ChosenOperator == atomic_op::dec) {
+        expected = (base_value - NumberIterations + i + 1) * num_changed_elems;
+      } else {
+        static_assert(ChosenOperator != ChosenOperator, "Unexpected operator.");
+      }
       if (expected != retrieved) {
         passed = fail_test(i, expected, retrieved, data_type,
                            "atomic_update return value", operator_type);
