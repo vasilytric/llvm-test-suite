@@ -158,7 +158,7 @@ public:
     }
 
     std::vector<size_t> changed_elems_indexes;
-    // Collect the indexess that has been changed.
+    // Collect the indexes that has been changed.
     for (size_t i = 0; i < NumElemsToChange; ++i) {
       if (filter(i) == 1) {
         changed_elems_indexes.push_back(local_offsets[i]);
@@ -188,7 +188,7 @@ public:
           passed = fail_test(i, expected_after_change, retrieved, data_type,
                              "value that should be updated", operator_type);
         }
-        updated_elem_next_index++;
+        ++updated_elem_next_index;
       }
     }
 
