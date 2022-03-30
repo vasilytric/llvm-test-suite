@@ -63,20 +63,4 @@ void fill_offsets(VectorT &vector) {
   }
 }
 
-// Provides std::vector that filled with initial values.
-template <int N, esimd::atomic_op Operator, typename T, typename VectorT>
-void fill_init_values(T initial_base_value, VectorT &vector) {
-  T base_value = initial_base_value;
-  T step = 0;
-
-  // Will need to update base value and step for some operators
-  static_assert((Operator == esimd::atomic_op::inc) ||
-                    (Operator == esimd::atomic_op::dec),
-                "Unsupported operator");
-
-  for (size_t i = 0; i < N; ++i) {
-    vector.push_back(base_value + step * i);
-  }
-}
-
 } // namespace esimd_test::api::functional::functions

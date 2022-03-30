@@ -27,6 +27,9 @@
 #include "common.hpp"
 #include "functions_atomic_update.hpp"
 
+// for std::fill
+#include <algorithm>
+
 using namespace esimd_test::api::functional;
 using namespace sycl::ext::intel::esimd;
 
@@ -99,8 +102,7 @@ public:
     constexpr DataT result_fill_value = 5;
     shared_allocator<DataT> allocator(queue);
     shared_vector<DataT> shared_init_values(NumElems, allocator);
-    functions::fill_init_values<NumElems, ChosenOperator, DataT>(
-        base_value, shared_init_values);
+    std::fill(shared_init_values.begin(), shared_init_values.end(), base_value);
 
     shared_vector<size_t> shared_offsets(NumElemsToChange,
                                          shared_allocator<size_t>(queue));
