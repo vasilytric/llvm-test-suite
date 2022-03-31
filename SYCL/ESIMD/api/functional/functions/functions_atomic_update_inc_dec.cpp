@@ -218,7 +218,15 @@ int main(int, char **) {
 
   bool passed = true;
 
-  const auto uint_types = named_type_pack<uint32_t>::generate("uint32_t");
+  const auto uint_types = named_type_pack<unsigned int>::generate("uint32_t");
+
+  const auto two_byte_uint = get_tested_types<tested_types::uint>()
+                                 .filter_by<filters::by_sizeof<2>::type>();
+  const auto fourth_byte_uint = get_tested_types<tested_types::uint>()
+                                    .filter_by<filters::by_sizeof<4>::type>();
+  const auto eight_byte_uint = get_tested_types<tested_types::uint>()
+                                   .filter_by<filters::by_sizeof<8>::type>();
+
   const auto single_size = get_sizes<16>();
   const auto nd_range_dims = integer_pack<1, 2, 3>::generate_unnamed();
   const auto num_elems_to_change = integer_pack<1, 8>::generate_unnamed();
@@ -238,9 +246,18 @@ int main(int, char **) {
   // Running test for combinations for data types, simd sizes, dn_range
   // dimensions, number element to change, filter types, atomic operator types
   // and algorithms to change.
+  // Run test for two byte uint types.
   passed &= for_all_combinations<run_test, atomic_update_0_operands>(
-      uint_types, single_size, nd_range_dims, num_elems_to_change, filter_types,
-      atomic_op_types, algorithm_to_change_offset, queue);
+      two_byte_uint, single_size, nd_range_dims, num_elems_to_change,
+      filter_types, atomic_op_types, algorithm_to_change_offset, queue);
+  // Run test for fourth byte uint types.
+  passed &= for_all_combinations<run_test, atomic_update_0_operands>(
+      fourth_byte_uint, single_size, nd_range_dims, num_elems_to_change,
+      filter_types, atomic_op_types, algorithm_to_change_offset, queue);
+  // Run test for eight byte uint types.
+  passed &= for_all_combinations<run_test, atomic_update_0_operands>(
+      eight_byte_uint, single_size, nd_range_dims, num_elems_to_change,
+      filter_types, atomic_op_types, algorithm_to_change_offset, queue);
 
   std::cout << (passed ? "=== Test passed\n" : "=== Test FAILED\n");
   return passed ? 0 : 1;

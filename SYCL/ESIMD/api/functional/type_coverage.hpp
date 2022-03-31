@@ -139,6 +139,15 @@ inline auto filter_type_pack(const std::string (&names)[N]) {
 }
 
 } // namespace detail
+namespace filters {
+
+// Struct that provided type filtration by it size.
+template <int size> struct by_sizeof {
+  template <typename DataT>
+  using type = std::bool_constant<sizeof(DataT) == size>;
+};
+
+} // namespace filters
 
 //----------------------------------------------------------------------------//
 // All type and value packs implementation
