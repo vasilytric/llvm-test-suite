@@ -16,7 +16,8 @@
 // XRUN: %GPU_RUN_PLACEHOLDER %t.out
 // XFAIL: *
 // TODO Remove XFAIL once unexpected error "Unknown type name 'uint8_t'" within
-// integration header is gone.
+// integration header is gone and unexpected static_assert when unsigned long
+// data type is used is gone.
 //
 // Test for simd atomic_update function.
 // The test uses increment and decrement atomic operators. Invokes atomic_update
