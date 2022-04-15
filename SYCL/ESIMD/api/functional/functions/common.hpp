@@ -26,10 +26,8 @@ public:
 
   std::string to_string() const override {
     std::string test_description = TestCaseT::get_description();
-
     test_description += " with simd<" + m_data_type;
     test_description += ", " + std::to_string(NumElems) + ">";
-
     return test_description;
   }
 
